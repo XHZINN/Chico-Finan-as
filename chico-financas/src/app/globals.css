@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --paper:#EDEAE1;
+  --paper-2:#F7F5EF;
+  --ink:#1B2B44;
+  --ink-soft:#5B6577;
+  --line:#C9C2B2;
+  --gold:#9C7A1E;
+  --gold-bg:#F1E7C9;
+  --rust:#933F35;
+  --rust-bg:#F3E1DD;
+  --teal:#2F6E64;
+  --teal-bg:#DEEAE6;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;
+}
+
+.wrap{max-width:720px;margin:0 auto;padding:24px 16px 60px;}
+
+h1{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:26px;
+  margin:0 0 4px;
+  letter-spacing:-0.01em;
+}
+.sub{color:var(--ink-soft);font-size:14px;margin:0 0 24px;}
+
+.receipt{
+  background:var(--paper-2);
+  border:1px solid var(--line);
+  border-radius:2px;
+  padding:20px 22px 16px;
+  position:relative;
+  margin-bottom:28px;
+}
+.receipt-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:14px;
+  padding:5px 0;
+  border-bottom:1px dashed var(--line);
+}
+.receipt-row:last-of-type{border-bottom:none;}
+.receipt-row .label{color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;}
+.receipt-row.total{
+  font-size:17px;font-weight:500;padding-top:10px;margin-top:4px;
+  border-top:1px solid var(--ink);border-bottom:none;
+}
+.receipt-row.total .label{color:var(--ink);font-weight:500;}
+
+.month-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.month-nav a{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:none;border:1px solid var(--line);border-radius:4px;
+  width:30px;height:30px;cursor:pointer;color:var(--ink);font-size:15px;
+  text-decoration:none;
+}
+.month-nav a:hover{background:var(--paper);}
+.month-label{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;}
+
+.stamp{
+  display:inline-block;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:0.08em;
+  padding:1px 7px;border-radius:3px;
+  transform:rotate(-3deg);
+  margin-right:8px;
+}
+.stamp.ok{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold);}
+
+section{margin-bottom:28px;}
+h2{
+  font-family:'Fraunces',serif;font-weight:600;font-size:17px;margin:0 0 12px;
+}
+
+.item-row{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--line);
+  font-size:14px;
+}
+.item-row .name{flex:1;}
+.item-row .value{font-family:'IBM Plex Mono',monospace;min-width:90px;text-align:right;}
+.item-row .del{
+  background:none;border:none;color:var(--rust);cursor:pointer;font-size:16px;
+  opacity:0.55;padding:2px 4px;
+}
+.item-row .del:hover{opacity:1;}
+
+.add-form{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.add-form input{
+  font-family:'IBM Plex Sans',sans-serif;
+  border:1px solid var(--line);background:var(--paper-2);
+  border-radius:4px;padding:8px 10px;font-size:14px;color:var(--ink);
+}
+.add-form input.name{flex:1;min-width:120px;}
+.add-form input.value{width:100px;font-family:'IBM Plex Mono',monospace;}
+.add-form label.conf{
+  display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-soft);
+  white-space:nowrap;
+}
+.add-form button{
+  background:var(--ink);color:var(--paper-2);border:none;border-radius:4px;
+  padding:0 14px;font-size:14px;cursor:pointer;
+}
+.add-form button:hover{opacity:0.88;}
+
+.goal-card{
+  background:var(--paper-2);border:1px solid var(--line);border-radius:6px;
+  padding:14px 16px;margin-bottom:12px;
+}
+.goal-nums{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);margin-bottom:8px;}
+.goal-bar-bg{
+  height:10px;background:var(--paper);border:1px solid var(--line);border-radius:5px;
+  overflow:hidden;margin-bottom:10px;
+}
+.goal-bar-fill{height:100%;background:var(--teal);}
+.goal-edit{display:flex;gap:8px;}
+.goal-edit input{
+  font-family:'IBM Plex Mono',monospace;border:1px solid var(--line);
+  background:var(--paper);border-radius:4px;padding:6px 8px;font-size:13px;width:90px;
+}
+.goal-edit button{
+  background:none;border:1px solid var(--teal);color:var(--teal);
+  border-radius:4px;padding:0 10px;font-size:13px;cursor:pointer;
+}
+.goal-remove{
+  background:none;border:none;color:var(--rust);opacity:0.6;cursor:pointer;font-size:12px;margin-left:8px;
+}
+.empty{color:var(--ink-soft);font-size:13px;font-style:italic;padding:8px 0;}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
