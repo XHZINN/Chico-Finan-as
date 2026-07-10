@@ -106,7 +106,7 @@ export const EXTRATO_RANGE = `
       id_mes
       mes
       fechado
-      transacoes_mes { valor tipo }
+      transacoes_mes { valor tipo origem }
     }
   }
 `;

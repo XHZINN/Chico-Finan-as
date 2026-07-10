@@ -50,6 +50,17 @@ export default async function Home({ searchParams }) {
     }
   }
 
+  const entradasReais = entradas.filter(e => e.origem !== "meta_retirada");
+  const saidasReais = saidas.filter(s => s.origem !== "meta_aporte");
+  
+
+  const totalEntradasReais = entradasReais.reduce((s, e) => s + Number(e.valor), 0);
+  const totalSaidasReais = saidasReais.reduce((s, e) => s + Number(e.valor), 0);
+
+  const totalAportado = saidas.filter(s => s.origem === "meta_aporte").reduce((s, e) => s + Number(e.valor), 0);
+  const totalRetirado = entradas.filter(e => e.origem === "meta_retirada").reduce((s, e) => s + Number(e.valor), 0);
+
+  // saldo de caixa continua sendo o cálculo original (com tudo incluso)
   const totalEntradas = entradas.reduce((s, e) => s + Number(e.valor), 0);
   const totalSaidas = saidas.reduce((s, e) => s + Number(e.valor), 0);
   const saldo = totalEntradas - totalSaidas;
@@ -75,8 +86,13 @@ export default async function Home({ searchParams }) {
     }
 
     const porMes = mesesRange.map(m => {
-      let ent = m.transacoes_mes.filter(t => t.tipo === "entrada").reduce((s, t) => s + Number(t.valor), 0);
-      let sai = m.transacoes_mes.filter(t => t.tipo === "saida").reduce((s, t) => s + Number(t.valor), 0);
+      let ent = m.transacoes_mes
+        .filter(t => t.tipo === "entrada" && t.origem !== "meta_retirada")
+        .reduce((s, t) => s + Number(t.valor), 0);
+      let sai = m.transacoes_mes
+        .filter(t => t.tipo === "saida" && t.origem !== "meta_aporte")
+        .reduce((s, t) => s + Number(t.valor), 0);
+
       if (!m.fechado && ativosExtras) {
         ent += ativosExtras.recorrentes.reduce((s, r) => s + Number(r.valor), 0);
         sai += ativosExtras.custos_fixos.reduce((s, c) => s + Number(c.valor), 0);
@@ -115,9 +131,11 @@ export default async function Home({ searchParams }) {
         {!mesInfo && <div className="empty">Esse mês ainda não existe no sistema.</div>}
         {mesInfo && (
           <>
-            <div className="receipt-row"><span className="label">Entradas</span><span>{fmt(totalEntradas)}</span></div>
-            <div className="receipt-row"><span className="label">Saídas</span><span>{fmt(totalSaidas)}</span></div>
-            <div className="receipt-row total"><span className="label">Saldo</span><span>{fmt(saldo)}</span></div>
+            <div className="receipt-row"><span className="label">Entradas reais</span><span>{fmt(totalEntradasReais)}</span></div>
+            <div className="receipt-row"><span className="label">Saídas reais</span><span>{fmt(totalSaidasReais)}</span></div>
+            <div className="receipt-row"><span className="label">Aportado em metas</span><span>{fmt(totalAportado)}</span></div>
+            <div className="receipt-row"><span className="label">Retirado de metas</span><span>{fmt(totalRetirado)}</span></div>
+            <div className="receipt-row total"><span className="label">Saldo de caixa</span><span>{fmt(saldo)}</span></div>
           </>
         )}
       </div>
@@ -130,6 +148,7 @@ export default async function Home({ searchParams }) {
             {entradas.map((e) => (
               <div className="item-row" key={e.id_transacao}>
                 {e.origem === "recorrente" && <span className="stamp ok">recorrente</span>}
+                {e.origem === "meta_retirada" && <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>meta</span>}
                 <span className="name">{e.nome}</span>
                 <span className="value">{fmt(e.valor)}</span>
                 {e.origem === "avulso" && !mesInfo.fechado && (
@@ -157,6 +176,7 @@ export default async function Home({ searchParams }) {
             {saidas.map((s) => (
               <div className="item-row" key={s.id_transacao}>
                 {s.origem === "custo_fixo" && <span className="stamp ok">fixo</span>}
+                {s.origem === "meta_aporte" && <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>meta</span>}
                 <span className="name">{s.nome}</span>
                 <span className="value">{fmt(s.valor)}</span>
                 {s.origem === "avulso" && !mesInfo.fechado && (
