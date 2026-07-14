@@ -67,6 +67,41 @@ async function fecharMesesAtrasados() {
     `, { mes: novoMes });
 
     console.log(`Mês ${mesAberto.mes} fechado. Mês ${novoMes} aberto.`);
+
+    // gera as parcelas do novo mês
+    const { parcelamentos } = await query(`
+      query { parcelamentos(where: {ativo: {_eq: true}, proximo_mes: {_eq: "${novoMes}"}}) { id_parcelamento descricao valor_parcela qtd_parcelas parcelas_pagas } }
+    `);
+
+    const { meses: novoMesRow } = await query(`
+      query { meses(where: {mes: {_eq: "${novoMes}"}}) { id_mes } }
+    `);
+    const id_mes_novo = novoMesRow[0].id_mes;
+
+    for (const p of parcelamentos) {
+      const novaContagem = p.parcelas_pagas + 1;
+      await query(`
+        mutation($id_mes: uuid!, $nome: String!, $valor: numeric!) {
+          insert_transacoes_mes_one(object: {id_mes: $id_mes, nome: $nome, valor: $valor, tipo: "saida", origem: "parcelamento"}) { id_transacao }
+        }
+      `, { id_mes: id_mes_novo, nome: `Parcela ${novaContagem}/${p.qtd_parcelas}: ${p.descricao}`, valor: p.valor_parcela });
+
+      const finalizado = novaContagem >= p.qtd_parcelas;
+      await query(`
+        mutation($id: uuid!, $pagas: Int!, $ativo: Boolean!, $proximo: date) {
+          update_parcelamentos_by_pk(pk_columns: {id_parcelamento: $id}, _set: {parcelas_pagas: $pagas, ativo: $ativo, proximo_mes: $proximo}) { id_parcelamento }
+        }
+      `, { id: p.id_parcelamento, pagas: novaContagem, ativo: !finalizado, proximo: finalizado ? null : proximoMes(novoMes) });
+
+      if (finalizado) {
+        // marca o item de meta vinculado (se existir) como comprado
+        await query(`
+          mutation($id_parc: uuid!) {
+            update_meta_itens(where: {id_parcelamento: {_eq: $id_parc}}, _set: {comprado: true}) { affected_rows }
+          }
+        `, { id_parc: p.id_parcelamento });
+      }
+    }
   }
 }
 

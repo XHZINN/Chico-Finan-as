@@ -122,3 +122,73 @@ export const INSERIR_TRANSACAO_META = `
     insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: $tipo, origem: $origem }) { id_transacao }
   }
 `;
+
+export const META_COM_ITENS = `
+  query MetaComItens($id: uuid!) {
+    metas_by_pk(id_meta: $id) { id_meta nome meta valor_atual }
+    meta_itens(where: { id_meta: { _eq: $id } }, order_by: { criado_em: asc }) {
+      id_item nome valor_planejado comprado id_parcelamento
+      parcelamento {
+        valor_parcela qtd_parcelas parcelas_pagas ativo proximo_mes
+      }
+    }
+  }
+`;
+
+export const INSERIR_ITEM_META = `
+  mutation InserirItemMeta($id_meta: uuid!, $nome: String!, $valor_planejado: numeric!) {
+    insert_meta_itens_one(object: { id_meta: $id_meta, nome: $nome, valor_planejado: $valor_planejado }) { id_item }
+  }
+`;
+
+export const TOGGLE_ITEM_COMPRADO = `
+  mutation ToggleItemComprado($id: uuid!, $comprado: Boolean!) {
+    update_meta_itens_by_pk(pk_columns: { id_item: $id }, _set: { comprado: $comprado }) { id_item }
+  }
+`;
+
+export const INVESTIMENTOS = `
+  query Investimentos {
+    investimentos(where: { resgatado: { _eq: false } }, order_by: { criado_em: desc }) {
+      id_investimento nome tipo valor_investido prazo_dias data_aplicacao
+    }
+  }
+`;
+
+export const INSERIR_INVESTIMENTO = `
+  mutation InserirInvestimento($nome: String!, $tipo: String!, $valor_investido: numeric!, $prazo_dias: Int) {
+    insert_investimentos_one(object: { nome: $nome, tipo: $tipo, valor_investido: $valor_investido, prazo_dias: $prazo_dias }) { id_investimento }
+  }
+`;
+
+export const RESGATAR_INVESTIMENTO = `
+  mutation ResgatarInvestimento($id: uuid!, $valor_resgatado: numeric!) {
+    update_investimentos_by_pk(pk_columns: { id_investimento: $id }, _set: { resgatado: true, valor_resgatado: $valor_resgatado, data_resgate: "now()" }) { id_investimento }
+  }
+`;
+
+export const EDITAR_ITEM_META = `
+  mutation EditarItemMeta($id: uuid!, $nome: String!, $valor_planejado: numeric!) {
+    update_meta_itens_by_pk(pk_columns: { id_item: $id }, _set: { nome: $nome, valor_planejado: $valor_planejado }) { id_item }
+  }
+`;
+
+export const INSERIR_PARCELAMENTO = `
+  mutation InserirParcelamento($descricao: String!, $valor_parcela: numeric!, $qtd_parcelas: Int!, $proximo_mes: date!) {
+    insert_parcelamentos_one(object: { descricao: $descricao, valor_parcela: $valor_parcela, qtd_parcelas: $qtd_parcelas, proximo_mes: $proximo_mes }) { id_parcelamento }
+  }
+`;
+
+export const VINCULAR_PARCELAMENTO_ITEM = `
+  mutation VincularParcelamentoItem($id_item: uuid!, $id_parcelamento: uuid!) {
+    update_meta_itens_by_pk(pk_columns: { id_item: $id_item }, _set: { id_parcelamento: $id_parcelamento }) { id_item }
+  }
+`;
+
+export const PARCELAMENTOS_ATIVOS = `
+  query ParcelamentosAtivos {
+    parcelamentos(where: { ativo: { _eq: true } }, order_by: { criado_em: desc }) {
+      id_parcelamento descricao valor_parcela qtd_parcelas parcelas_pagas proximo_mes
+    }
+  }
+`;

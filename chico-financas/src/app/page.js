@@ -1,12 +1,13 @@
 import Toast from "./Toast";
 import { nhostQuery } from "@/lib/nhost";
 import {
-  MES_INFO, TRANSACOES_DO_MES, ATIVOS, TODOS_RECORRENTES_CUSTOS, METAS, EXTRATO_RANGE,
+  MES_INFO, TRANSACOES_DO_MES, ATIVOS, TODOS_RECORRENTES_CUSTOS, METAS, EXTRATO_RANGE, INVESTIMENTOS, INSERIR_ITEM_META,
 } from "@/lib/queries";
 import {
   adicionarAvulso, adicionarRecorrente, adicionarCustoFixo,
   toggleRecorrente, toggleCustoFixo, retirarDaMeta,
-  adicionarMeta, guardarNaMeta, deletarMeta, deletarAvulso,
+  adicionarMeta, guardarNaMeta, deletarMeta, deletarAvulso, guardarInvestimento, 
+  resgatarInvestimento
 } from "./actions";
 
 function fmt(n) {
@@ -20,6 +21,8 @@ function mesAdjacente(mesYYYYMM, delta) {
 function primeiroDia(mesYYYYMM) {
   return mesYYYYMM + "-01";
 }
+
+const { investimentos } = await nhostQuery(INVESTIMENTOS);
 
 export default async function Home({ searchParams }) {
   const sp = await searchParams;
@@ -133,7 +136,7 @@ export default async function Home({ searchParams }) {
           <>
             <div className="receipt-row"><span className="label">Entradas reais</span><span>{fmt(totalEntradasReais)}</span></div>
             <div className="receipt-row"><span className="label">Saídas reais</span><span>{fmt(totalSaidasReais)}</span></div>
-            <div className="receipt-row"><span className="label">Aportado em metas</span><span>{fmt(totalAportado)}</span></div>
+            <div className="receipt-row"><span className="label">Guardado em metas</span><span>{fmt(totalAportado)}</span></div>
             <div className="receipt-row"><span className="label">Retirado de metas</span><span>{fmt(totalRetirado)}</span></div>
             <div className="receipt-row total"><span className="label">Saldo de caixa</span><span>{fmt(saldo)}</span></div>
           </>
@@ -249,7 +252,7 @@ export default async function Home({ searchParams }) {
           const pct = Math.min(100, Math.round((g.valor_atual / g.meta) * 100));
           return (
             <div className="goal-card" key={g.id_meta}>
-              <div className="goal-nums">{fmt(g.valor_atual)} de {fmt(g.meta)} · {pct}%</div>
+              <div className="goal-nums"><strong>{g.nome}</strong> — {fmt(g.valor_atual)} de {fmt(g.meta)} · {pct}%</div>
               <div className="goal-bar-bg"><div className="goal-bar-fill" style={{ width: `${pct}%` }} /></div>
               <div className="goal-edit">
                 <form action={guardarNaMeta} style={{ display: "flex", gap: 8 }}>
@@ -273,6 +276,7 @@ export default async function Home({ searchParams }) {
                   <button className="goal-remove" type="submit">remover</button>
                 </form>
               </div>
+              <a href={`/metas/${g.id_meta}`} className="btn-link primary">ver itens →</a>
             </div>
           );
         })}
@@ -280,6 +284,35 @@ export default async function Home({ searchParams }) {
           <input className="name" name="nome" placeholder="Nome da meta" required />
           <input className="value" name="meta" placeholder="Valor alvo" type="number" step="0.01" required />
           <button type="submit">+</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Investimentos <small>(sem teto — cofrinho ou CDB)</small></h2>
+        {investimentos.map((inv) => (
+          <div className="goal-card" key={inv.id_investimento}>
+            <div className="goal-nums"><strong>{inv.nome}</strong> — {inv.tipo.toUpperCase()} · {fmt(inv.valor_investido)} {inv.prazo_dias ? `· ${inv.prazo_dias} dias` : ""}</div>
+            <form action={resgatarInvestimento} style={{display:"flex", gap: 8}}>
+              <input type="hidden" name="id" value={inv.id_investimento} />
+              <input type="hidden" name="nome" value={inv.nome} />
+              <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+              <input type="hidden" name="mes" value={mesYYYYMM} />
+              <input name="valor_resgatado" type="number" step="0.01" placeholder="valor recebido no resgate" required />
+              <button type="submit">resgatar</button>
+            </form>
+          </div>
+        ))}
+        <form action={guardarInvestimento} className="add-form">
+          <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+          <input type="hidden" name="mes" value={mesYYYYMM} />
+          <input className="name" name="nome" placeholder="Nome" required />
+          <select name="tipo" required>
+            <option value="cofrinho">Cofrinho</option>
+            <option value="cdb">CDB</option>
+          </select>
+          <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
+          <input name="prazo_dias" placeholder="Prazo (dias)" type="number" />
+          <button type="submit">Aplicar</button>
         </form>
       </section>
 
