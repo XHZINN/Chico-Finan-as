@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Chico Finanças",
-  description: "Criado para gerir as economias de Henry",
+  description: "Criado para gerir as economias de Henry Gabriel",
 };
 
 export default function RootLayout({ children }) {
