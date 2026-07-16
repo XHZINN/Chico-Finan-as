@@ -149,15 +149,9 @@ export const TOGGLE_ITEM_COMPRADO = `
 
 export const INVESTIMENTOS = `
   query Investimentos {
-    investimentos(where: { resgatado: { _eq: false } }, order_by: { criado_em: desc }) {
-      id_investimento nome tipo valor_investido prazo_dias data_aplicacao
+    investimentos(order_by: { nome: asc }) {
+      id_investimento nome tipo valor_atual percentual_cdi cdi_atual
     }
-  }
-`;
-
-export const INSERIR_INVESTIMENTO = `
-  mutation InserirInvestimento($nome: String!, $tipo: String!, $valor_investido: numeric!, $prazo_dias: Int) {
-    insert_investimentos_one(object: { nome: $nome, tipo: $tipo, valor_investido: $valor_investido, prazo_dias: $prazo_dias }) { id_investimento }
   }
 `;
 
@@ -190,5 +184,44 @@ export const PARCELAMENTOS_ATIVOS = `
     parcelamentos(where: { ativo: { _eq: true } }, order_by: { criado_em: desc }) {
       id_parcelamento descricao valor_parcela qtd_parcelas parcelas_pagas proximo_mes
     }
+  }
+`;
+
+export const INVESTIMENTO_BY_ID = `
+  query InvestimentoById($id: uuid!) {
+    investimentos_by_pk(id_investimento: $id) { id_investimento nome tipo valor_atual percentual_cdi cdi_atual }
+  }
+`;
+
+export const GUARDAR_NO_INVESTIMENTO = `
+  mutation GuardarNoInvestimento($id: uuid!, $valor: numeric!) {
+    update_investimentos_by_pk(pk_columns: { id_investimento: $id }, _inc: { valor_atual: $valor }) { id_investimento valor_atual }
+  }
+`;
+
+export const SET_VALOR_INVESTIMENTO = `
+  mutation SetValorInvestimento($id: uuid!, $valor_atual: numeric!) {
+    update_investimentos_by_pk(pk_columns: { id_investimento: $id }, _set: { valor_atual: $valor_atual }) { id_investimento }
+  }
+`;
+
+export const ATUALIZAR_TAXA_INVESTIMENTO = `
+  mutation AtualizarTaxaInvestimento($id: uuid!, $percentual_cdi: numeric!, $cdi_atual: numeric!) {
+    update_investimentos_by_pk(pk_columns: { id_investimento: $id }, _set: { percentual_cdi: $percentual_cdi, cdi_atual: $cdi_atual }) { id_investimento }
+  }
+`;
+
+export const TRANSACOES_INVESTIMENTO = `
+  query TransacoesInvestimento($id: uuid!) {
+    transacoes_mes(where: { id_investimento: { _eq: $id } }, order_by: { id_transacao: desc }) {
+      id_transacao nome valor tipo
+      mes { mes }
+    }
+  }
+`;
+
+export const INSERIR_TRANSACAO_INVESTIMENTO = `
+  mutation InserirTransacaoInvestimento($id_mes: uuid!, $id_investimento: uuid!, $nome: String!, $valor: numeric!, $tipo: String!, $origem: String!) {
+    insert_transacoes_mes_one(object: { id_mes: $id_mes, id_investimento: $id_investimento, nome: $nome, valor: $valor, tipo: $tipo, origem: $origem }) { id_transacao }
   }
 `;

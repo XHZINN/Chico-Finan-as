@@ -7,8 +7,9 @@ import {
   TOGGLE_RECORRENTE, TOGGLE_CUSTO_FIXO, META_BY_ID,
   INSERIR_TRANSACAO_META, INSERIR_META, GUARDAR_NA_META,
   DELETAR_META, DELETAR_AVULSO, EDITAR_ITEM_META, INSERIR_ITEM_META,
-  META_COM_ITENS, TOGGLE_ITEM_COMPRADO, INSERIR_INVESTIMENTO, RESGATAR_INVESTIMENTO,
-  INSERIR_PARCELAMENTO, VINCULAR_PARCELAMENTO_ITEM,
+  META_COM_ITENS, TOGGLE_ITEM_COMPRADO, INSERIR_PARCELAMENTO, VINCULAR_PARCELAMENTO_ITEM,
+  INVESTIMENTO_BY_ID, GUARDAR_NO_INVESTIMENTO, SET_VALOR_INVESTIMENTO,
+  ATUALIZAR_TAXA_INVESTIMENTO, INSERIR_TRANSACAO_INVESTIMENTO,
 } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
 
@@ -169,39 +170,6 @@ export async function toggleItemComprado(formData) {
   revalidatePath("/");
 }
 
-export async function guardarInvestimento(formData) {
-  const nome = formData.get("nome");
-  const tipo = formData.get("tipo");
-  const valor = parseFloat(formData.get("valor"));
-  const prazo_dias = formData.get("prazo_dias") ? parseInt(formData.get("prazo_dias")) : null;
-  const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
-
-  await nhostQuery(INSERIR_INVESTIMENTO, { nome, tipo, valor_investido: valor, prazo_dias });
-  await nhostQuery(INSERIR_TRANSACAO_META, {
-    id_mes, nome: `Aplicação: ${nome}`, valor, tipo: "saida", origem: "investimento_aporte",
-  });
-
-  revalidatePath("/");
-  redirect(`/?mes=${mes}`);
-}
-
-export async function resgatarInvestimento(formData) {
-  const id = formData.get("id");
-  const nome = formData.get("nome");
-  const valor_resgatado = parseFloat(formData.get("valor_resgatado"));
-  const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
-
-  await nhostQuery(RESGATAR_INVESTIMENTO, { id, valor_resgatado });
-  await nhostQuery(INSERIR_TRANSACAO_META, {
-    id_mes, nome: `Resgate: ${nome}`, valor: valor_resgatado, tipo: "entrada", origem: "investimento_resgate",
-  });
-
-  revalidatePath("/");
-  redirect(`/?mes=${mes}`);
-}
-
 export async function editarItemMeta(formData) {
   const id = formData.get("id");
   const id_meta = formData.get("id_meta");
@@ -264,4 +232,88 @@ export async function comprarAvulsoParcelado(formData) {
   });
 
   revalidatePath("/");
+}
+
+export async function adicionarInvestimento(formData) {
+  const nome = formData.get("nome");
+  const tipo = formData.get("tipo");
+  const valor = parseFloat(formData.get("valor"));
+  const taxa_anual = parseFloat(formData.get("taxa_anual")) || 0;
+  const prazo_dias = formData.get("prazo_dias") ? parseInt(formData.get("prazo_dias")) : null;
+  const id_mes = formData.get("id_mes");
+  const mes = formData.get("mes");
+
+  const { insert_investimentos_one } = await nhostQuery(INSERIR_INVESTIMENTO, {
+    nome, tipo, valor_investido: valor, taxa_anual, prazo_dias,
+  });
+
+  await nhostQuery(INSERIR_TRANSACAO_INVESTIMENTO, {
+    id_mes, id_investimento: insert_investimentos_one.id_investimento,
+    nome: `Aplicação: ${nome}`, valor, tipo: "saida", origem: "investimento_aporte",
+  });
+
+  revalidatePath("/");
+  redirect(`/?mes=${mes}`);
+}
+
+export async function guardarNoInvestimento(formData) {
+  const id = formData.get("id");
+  const nome = formData.get("nome");
+  const valor = parseFloat(formData.get("valor"));
+  const id_mes = formData.get("id_mes");
+  const mes = formData.get("mes");
+
+  if (valor <= 0) return;
+
+  await nhostQuery(INSERIR_TRANSACAO_INVESTIMENTO, {
+    id_mes, id_investimento: id, nome: `Guardado em: ${nome}`, valor, tipo: "saida", origem: "investimento_aporte",
+  });
+  await nhostQuery(GUARDAR_NO_INVESTIMENTO, { id, valor });
+
+  revalidatePath("/");
+  revalidatePath(`/investimentos/${id}`);
+  redirect(`/?mes=${mes}`);
+}
+
+export async function retirarDoInvestimento(formData) {
+  const id = formData.get("id");
+  const nome = formData.get("nome");
+  const valorSolicitado = parseFloat(formData.get("valor"));
+  const id_mes = formData.get("id_mes");
+  const mes = formData.get("mes");
+
+  if (valorSolicitado <= 0) return;
+
+  const { investimentos_by_pk } = await nhostQuery(INVESTIMENTO_BY_ID, { id });
+  const disponivel = Number(investimentos_by_pk.valor_atual);
+  const valorRetirado = Math.min(valorSolicitado, disponivel); // nunca negativa, só zera
+
+  await nhostQuery(INSERIR_TRANSACAO_INVESTIMENTO, {
+    id_mes, id_investimento: id, nome: `Retirada de: ${nome}`, valor: valorRetirado, tipo: "entrada", origem: "investimento_resgate",
+  });
+  await nhostQuery(SET_VALOR_INVESTIMENTO, { id, valor_atual: disponivel - valorRetirado });
+
+  revalidatePath("/");
+  revalidatePath(`/investimentos/${id}`);
+  redirect(`/?mes=${mes}`);
+}
+
+export async function atualizarValorInvestimento(formData) {
+  const id = formData.get("id");
+  const valor_atual = parseFloat(formData.get("valor_atual"));
+
+  await nhostQuery(SET_VALOR_INVESTIMENTO, { id, valor_atual });
+
+  revalidatePath("/");
+  revalidatePath(`/investimentos/${id}`);
+}
+
+export async function atualizarTaxaInvestimento(formData) {
+  const id = formData.get("id");
+  const percentual_cdi = parseFloat(formData.get("percentual_cdi"));
+  const cdi_atual = parseFloat(formData.get("cdi_atual"));
+
+  await nhostQuery(ATUALIZAR_TAXA_INVESTIMENTO, { id, percentual_cdi, cdi_atual });
+
+  revalidatePath(`/investimentos/${id}`);
 }

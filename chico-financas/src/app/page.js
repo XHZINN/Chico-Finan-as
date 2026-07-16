@@ -1,13 +1,13 @@
 import Toast from "./Toast";
 import { nhostQuery } from "@/lib/nhost";
 import {
-  MES_INFO, TRANSACOES_DO_MES, ATIVOS, TODOS_RECORRENTES_CUSTOS, METAS, EXTRATO_RANGE, INVESTIMENTOS, INSERIR_ITEM_META,
+  MES_INFO, TRANSACOES_DO_MES, ATIVOS, TODOS_RECORRENTES_CUSTOS, METAS, EXTRATO_RANGE, INVESTIMENTOS,
 } from "@/lib/queries";
 import {
   adicionarAvulso, adicionarRecorrente, adicionarCustoFixo,
   toggleRecorrente, toggleCustoFixo, retirarDaMeta,
-  adicionarMeta, guardarNaMeta, deletarMeta, deletarAvulso, guardarInvestimento, 
-  resgatarInvestimento
+  adicionarMeta, guardarNaMeta, deletarMeta, deletarAvulso,
+  guardarNoInvestimento, retirarDoInvestimento,
 } from "./actions";
 
 function fmt(n) {
@@ -21,8 +21,6 @@ function mesAdjacente(mesYYYYMM, delta) {
 function primeiroDia(mesYYYYMM) {
   return mesYYYYMM + "-01";
 }
-
-const { investimentos } = await nhostQuery(INVESTIMENTOS);
 
 export default async function Home({ searchParams }) {
   const sp = await searchParams;
@@ -73,6 +71,9 @@ export default async function Home({ searchParams }) {
 
   // metas
   const { metas } = await nhostQuery(METAS);
+
+  // investimentos
+  const { investimentos } = await nhostQuery(INVESTIMENTOS);
 
   // extrato de intervalo (só roda se vier de/ate na URL)
   let extrato = null;
@@ -286,34 +287,36 @@ export default async function Home({ searchParams }) {
           <button type="submit">+</button>
         </form>
       </section>
-
+      
       <section>
-        <h2>Investimentos <small>(sem teto — cofrinho ou CDB)</small></h2>
+        <h2>Investimentos</h2>
         {investimentos.map((inv) => (
           <div className="goal-card" key={inv.id_investimento}>
-            <div className="goal-nums"><strong>{inv.nome}</strong> — {inv.tipo.toUpperCase()} · {fmt(inv.valor_investido)} {inv.prazo_dias ? `· ${inv.prazo_dias} dias` : ""}</div>
-            <form action={resgatarInvestimento} style={{display:"flex", gap: 8}}>
-              <input type="hidden" name="id" value={inv.id_investimento} />
-              <input type="hidden" name="nome" value={inv.nome} />
-              <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-              <input type="hidden" name="mes" value={mesYYYYMM} />
-              <input name="valor_resgatado" type="number" step="0.01" placeholder="valor recebido no resgate" required />
-              <button type="submit">resgatar</button>
-            </form>
+            <div className="goal-nums">
+              <strong>{inv.nome}</strong> — {fmt(inv.valor_atual)}
+              <span style={{fontSize: 12, color: "var(--ink-soft)"}}> · {inv.percentual_cdi}% do CDI ({inv.cdi_atual}% a.a.)</span>
+            </div>
+            <div className="goal-edit">
+              <form action={guardarNoInvestimento} style={{display:"flex", gap:8}}>
+                <input type="hidden" name="id" value={inv.id_investimento} />
+                <input type="hidden" name="nome" value={inv.nome} />
+                <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+                <input type="hidden" name="mes" value={mesYYYYMM} />
+                <input name="valor" type="number" step="0.01" placeholder="valor" required />
+                <button type="submit">guardar</button>
+              </form>
+              <form action={retirarDoInvestimento} style={{display:"flex", gap:8}}>
+                <input type="hidden" name="id" value={inv.id_investimento} />
+                <input type="hidden" name="nome" value={inv.nome} />
+                <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+                <input type="hidden" name="mes" value={mesYYYYMM} />
+                <input name="valor" type="number" step="0.01" placeholder="valor" required />
+                <button type="submit">retirar</button>
+              </form>
+            </div>
+            <a href={`/investimentos/${inv.id_investimento}`} className="btn-link primary">ver detalhes →</a>
           </div>
         ))}
-        <form action={guardarInvestimento} className="add-form">
-          <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-          <input type="hidden" name="mes" value={mesYYYYMM} />
-          <input className="name" name="nome" placeholder="Nome" required />
-          <select name="tipo" required>
-            <option value="cofrinho">Cofrinho</option>
-            <option value="cdb">CDB</option>
-          </select>
-          <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-          <input name="prazo_dias" placeholder="Prazo (dias)" type="number" />
-          <button type="submit">Aplicar</button>
-        </form>
       </section>
 
       <section>

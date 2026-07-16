@@ -23,9 +23,7 @@ export default async function MetaDetalhe({ params, searchParams }) {
   const qtdParcelasAtivas = parcelasAtivas.length;
 
   // itens já planejados mas ainda não comprados nem parcelados: dinheiro reservado, ainda não gasto
-  const itensReservados = meta_itens.filter(i => !i.comprado && !i.id_parcelamento);
-  const valorReservado = itensReservados.reduce((s, i) => s + Number(i.valor_planejado), 0);
-  const saldoReal = Number(meta.valor_atual) - valorReservado;
+  const saldoReal = Number(meta.valor_atual);
 
   return (
     <div className="wrap">
