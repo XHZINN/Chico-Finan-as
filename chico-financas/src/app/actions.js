@@ -4,20 +4,28 @@ import { redirect } from "next/navigation";
 import { nhostQuery } from "@/lib/nhost";
 import {
   INSERIR_AVULSO, INSERIR_RECORRENTE, INSERIR_CUSTO_FIXO,
-  TOGGLE_RECORRENTE, TOGGLE_CUSTO_FIXO, META_BY_ID,
+  TOGGLE_RECORRENTE, TOGGLE_CUSTO_FIXO, EDITAR_RECORRENTE, EDITAR_CUSTO_FIXO, META_BY_ID,
   INSERIR_TRANSACAO_META, INSERIR_META, GUARDAR_NA_META,
   DELETAR_META, DELETAR_AVULSO, EDITAR_ITEM_META, INSERIR_ITEM_META,
   META_COM_ITENS, TOGGLE_ITEM_COMPRADO, INSERIR_PARCELAMENTO, VINCULAR_PARCELAMENTO_ITEM,
   INVESTIMENTO_BY_ID, GUARDAR_NO_INVESTIMENTO, SET_VALOR_INVESTIMENTO,
-  ATUALIZAR_TAXA_INVESTIMENTO, INSERIR_TRANSACAO_INVESTIMENTO,
+  ATUALIZAR_TAXA_INVESTIMENTO, INSERIR_TRANSACAO_INVESTIMENTO, INSERIR_INVESTIMENTO,
 } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
+
+function valorValido(v) {
+  return typeof v === "number" && !Number.isNaN(v) && v > 0;
+}
 
 export async function adicionarAvulso(formData) {
   const id_mes = formData.get("id_mes");
   const nome = formData.get("nome");
   const valor = parseFloat(formData.get("valor"));
   const tipo = formData.get("tipo");
+  const mes = formData.get("mes");
+
+  if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
+
   await nhostQuery(INSERIR_AVULSO, { id_mes, nome, valor, tipo });
   revalidatePath("/");
 }
@@ -25,14 +33,22 @@ export async function adicionarAvulso(formData) {
 export async function adicionarRecorrente(formData) {
   const nome = formData.get("nome");
   const valor = parseFloat(formData.get("valor"));
+
+  if (!valorValido(valor)) redirect(`/recorrentes?erro=valor_invalido`);
+
   await nhostQuery(INSERIR_RECORRENTE, { nome, valor });
+  revalidatePath("/recorrentes");
   revalidatePath("/");
 }
 
 export async function adicionarCustoFixo(formData) {
   const nome = formData.get("nome");
   const valor = parseFloat(formData.get("valor"));
+
+  if (!valorValido(valor)) redirect(`/recorrentes?erro=valor_invalido`);
+
   await nhostQuery(INSERIR_CUSTO_FIXO, { nome, valor });
+  revalidatePath("/recorrentes");
   revalidatePath("/");
 }
 
@@ -40,6 +56,7 @@ export async function toggleRecorrente(formData) {
   const id = formData.get("id");
   const status = formData.get("status") === "true";
   await nhostQuery(TOGGLE_RECORRENTE, { id, status: !status });
+  revalidatePath("/recorrentes");
   revalidatePath("/");
 }
 
@@ -47,14 +64,44 @@ export async function toggleCustoFixo(formData) {
   const id = formData.get("id");
   const status = formData.get("status") === "true";
   await nhostQuery(TOGGLE_CUSTO_FIXO, { id, status: !status });
+  revalidatePath("/recorrentes");
   revalidatePath("/");
+}
+
+export async function editarRecorrente(formData) {
+  const id = formData.get("id");
+  const nome = formData.get("nome");
+  const valor = parseFloat(formData.get("valor"));
+
+  if (!valorValido(valor)) redirect(`/recorrentes?erro=valor_invalido`);
+
+  await nhostQuery(EDITAR_RECORRENTE, { id, nome, valor });
+  revalidatePath("/recorrentes");
+  revalidatePath("/");
+  redirect(`/recorrentes`);
+}
+
+export async function editarCustoFixo(formData) {
+  const id = formData.get("id");
+  const nome = formData.get("nome");
+  const valor = parseFloat(formData.get("valor"));
+
+  if (!valorValido(valor)) redirect(`/recorrentes?erro=valor_invalido`);
+
+  await nhostQuery(EDITAR_CUSTO_FIXO, { id, nome, valor });
+  revalidatePath("/recorrentes");
+  revalidatePath("/");
+  redirect(`/recorrentes`);
 }
 
 export async function adicionarMeta(formData) {
   const nome = formData.get("nome");
   const meta = parseFloat(formData.get("meta"));
+
+  if (!valorValido(meta)) redirect(`/metas?erro=valor_invalido`);
+
   await nhostQuery(INSERIR_META, { nome, meta });
-  revalidatePath("/");
+  revalidatePath("/metas");
 }
 
 export async function guardarNaMeta(formData) {
@@ -62,16 +109,15 @@ export async function guardarNaMeta(formData) {
   const nomeMeta = formData.get("nome_meta");
   const valor = parseFloat(formData.get("valor"));
   const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
 
-  if (valor <= 0) return;
+  if (!valorValido(valor)) redirect(`/metas?erro=valor_invalido`);
 
   const { metas_by_pk } = await nhostQuery(META_BY_ID, { id });
-  if (!metas_by_pk) redirect(`/?mes=${mes}&erro=meta_invalida`);
+  if (!metas_by_pk) redirect(`/metas?erro=meta_invalida`);
 
   const novoValor = Number(metas_by_pk.valor_atual) + valor;
   if (novoValor > Number(metas_by_pk.meta)) {
-    redirect(`/?mes=${mes}&erro=aporte_excede`);
+    redirect(`/metas?erro=aporte_excede`);
   }
 
   await nhostQuery(INSERIR_TRANSACAO_META, {
@@ -79,8 +125,9 @@ export async function guardarNaMeta(formData) {
   });
   await nhostQuery(GUARDAR_NA_META, { id, valor });
 
+  revalidatePath("/metas");
   revalidatePath("/");
-  redirect(`/?mes=${mes}`);
+  redirect(`/metas`);
 }
 
 export async function retirarDaMeta(formData) {
@@ -88,13 +135,12 @@ export async function retirarDaMeta(formData) {
   const nomeMeta = formData.get("nome_meta");
   const valor = parseFloat(formData.get("valor"));
   const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
 
-  if (valor <= 0) return;
+  if (!valorValido(valor)) redirect(`/metas?erro=valor_invalido`);
 
   const { metas_by_pk } = await nhostQuery(META_BY_ID, { id });
   if (!metas_by_pk || Number(metas_by_pk.valor_atual) < valor) {
-    redirect(`/?mes=${mes}&erro=retirada`);
+    redirect(`/metas?erro=retirada`);
   }
 
   await nhostQuery(INSERIR_TRANSACAO_META, {
@@ -102,13 +148,14 @@ export async function retirarDaMeta(formData) {
   });
   await nhostQuery(GUARDAR_NA_META, { id, valor: -valor });
 
+  revalidatePath("/metas");
   revalidatePath("/");
-  redirect(`/?mes=${mes}`);
+  redirect(`/metas`);
 }
 
 export async function deletarMeta(formData) {
   await nhostQuery(DELETAR_META, { id: formData.get("id") });
-  revalidatePath("/");
+  revalidatePath("/metas");
 }
 
 export async function deletarAvulso(formData) {
@@ -116,15 +163,12 @@ export async function deletarAvulso(formData) {
   revalidatePath("/");
 }
 
-export async function adicionarRecorrenteOuCusto(formData) {
-  // já existem adicionarRecorrente e adicionarCustoFixo da etapa anterior, sem mudança
-}
-
 export async function adicionarItemMeta(formData) {
   const id_meta = formData.get("id_meta");
   const nome = formData.get("nome");
   const valor_planejado = parseFloat(formData.get("valor_planejado"));
-  const mes = formData.get("mes");
+
+  if (!valorValido(valor_planejado)) redirect(`/metas/${id_meta}?erro=valor_invalido`);
 
   const { metas_by_pk, meta_itens } = await nhostQuery(META_COM_ITENS, { id: id_meta });
   const somaAtual = meta_itens.reduce((s, i) => s + Number(i.valor_planejado), 0);
@@ -176,6 +220,8 @@ export async function editarItemMeta(formData) {
   const nome = formData.get("nome");
   const valor_planejado = parseFloat(formData.get("valor_planejado"));
 
+  if (!valorValido(valor_planejado)) redirect(`/metas/${id_meta}?erro=valor_invalido`);
+
   const { metas_by_pk, meta_itens } = await nhostQuery(META_COM_ITENS, { id: id_meta });
   const somaOutros = meta_itens.filter(i => i.id_item !== id).reduce((s, i) => s + Number(i.valor_planejado), 0);
 
@@ -196,6 +242,10 @@ export async function comprarItemParcelado(formData) {
   const qtd_parcelas = parseInt(formData.get("qtd_parcelas"));
   const id_mes = formData.get("id_mes");
   const mes = formData.get("mes");
+
+  if (!valorValido(valor_total) || !Number.isInteger(qtd_parcelas) || qtd_parcelas < 1) {
+    redirect(`/metas/${id_meta}?erro=valor_invalido`);
+  }
 
   const valor_parcela = Math.round((valor_total / qtd_parcelas) * 100) / 100;
 
@@ -236,15 +286,14 @@ export async function comprarAvulsoParcelado(formData) {
 
 export async function adicionarInvestimento(formData) {
   const nome = formData.get("nome");
-  const tipo = formData.get("tipo");
+  const tipo = formData.get("tipo")?.toLowerCase();
   const valor = parseFloat(formData.get("valor"));
-  const taxa_anual = parseFloat(formData.get("taxa_anual")) || 0;
-  const prazo_dias = formData.get("prazo_dias") ? parseInt(formData.get("prazo_dias")) : null;
   const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
+
+  if (!valorValido(valor)) redirect(`/investimentos?erro=valor_invalido`);
 
   const { insert_investimentos_one } = await nhostQuery(INSERIR_INVESTIMENTO, {
-    nome, tipo, valor_investido: valor, taxa_anual, prazo_dias,
+    nome, tipo, valor_investido: valor,
   });
 
   await nhostQuery(INSERIR_TRANSACAO_INVESTIMENTO, {
@@ -252,8 +301,9 @@ export async function adicionarInvestimento(formData) {
     nome: `Aplicação: ${nome}`, valor, tipo: "saida", origem: "investimento_aporte",
   });
 
+  revalidatePath("/investimentos");
   revalidatePath("/");
-  redirect(`/?mes=${mes}`);
+  redirect(`/investimentos`);
 }
 
 export async function guardarNoInvestimento(formData) {
@@ -261,9 +311,9 @@ export async function guardarNoInvestimento(formData) {
   const nome = formData.get("nome");
   const valor = parseFloat(formData.get("valor"));
   const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
+  const redirectTo = formData.get("redirect_to") || "/investimentos";
 
-  if (valor <= 0) return;
+  if (!valorValido(valor)) redirect(`${redirectTo}?erro=valor_invalido`);
 
   await nhostQuery(INSERIR_TRANSACAO_INVESTIMENTO, {
     id_mes, id_investimento: id, nome: `Guardado em: ${nome}`, valor, tipo: "saida", origem: "investimento_aporte",
@@ -271,8 +321,9 @@ export async function guardarNoInvestimento(formData) {
   await nhostQuery(GUARDAR_NO_INVESTIMENTO, { id, valor });
 
   revalidatePath("/");
+  revalidatePath("/investimentos");
   revalidatePath(`/investimentos/${id}`);
-  redirect(`/?mes=${mes}`);
+  redirect(redirectTo);
 }
 
 export async function retirarDoInvestimento(formData) {
@@ -280,9 +331,9 @@ export async function retirarDoInvestimento(formData) {
   const nome = formData.get("nome");
   const valorSolicitado = parseFloat(formData.get("valor"));
   const id_mes = formData.get("id_mes");
-  const mes = formData.get("mes");
+  const redirectTo = formData.get("redirect_to") || "/investimentos";
 
-  if (valorSolicitado <= 0) return;
+  if (!valorValido(valorSolicitado)) redirect(`${redirectTo}?erro=valor_invalido`);
 
   const { investimentos_by_pk } = await nhostQuery(INVESTIMENTO_BY_ID, { id });
   const disponivel = Number(investimentos_by_pk.valor_atual);
@@ -294,8 +345,9 @@ export async function retirarDoInvestimento(formData) {
   await nhostQuery(SET_VALOR_INVESTIMENTO, { id, valor_atual: disponivel - valorRetirado });
 
   revalidatePath("/");
+  revalidatePath("/investimentos");
   revalidatePath(`/investimentos/${id}`);
-  redirect(`/?mes=${mes}`);
+  redirect(redirectTo);
 }
 
 export async function atualizarValorInvestimento(formData) {
@@ -305,6 +357,7 @@ export async function atualizarValorInvestimento(formData) {
   await nhostQuery(SET_VALOR_INVESTIMENTO, { id, valor_atual });
 
   revalidatePath("/");
+  revalidatePath("/investimentos");
   revalidatePath(`/investimentos/${id}`);
 }
 
@@ -315,5 +368,6 @@ export async function atualizarTaxaInvestimento(formData) {
 
   await nhostQuery(ATUALIZAR_TAXA_INVESTIMENTO, { id, percentual_cdi, cdi_atual });
 
+  revalidatePath("/investimentos");
   revalidatePath(`/investimentos/${id}`);
 }

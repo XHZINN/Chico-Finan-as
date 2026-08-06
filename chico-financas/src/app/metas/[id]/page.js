@@ -28,7 +28,7 @@ export default async function MetaDetalhe({ params, searchParams }) {
   return (
     <div className="wrap">
       <h1>{meta.nome}</h1>
-      <a href="/" className="btn-link">&larr; voltar</a>
+      <a href="/metas" className="btn-link">&larr; voltar</a>
       <div className="receipt">
         <div className="receipt-row"><span className="label">Guardado</span><span>{fmt(meta.valor_atual)}</span></div>
         <div className="receipt-row"><span className="label">Gasto</span><span>{fmt(totalGasto)}</span></div>

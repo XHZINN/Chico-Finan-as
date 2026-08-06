@@ -1,14 +1,9 @@
 import Toast from "./Toast";
 import { nhostQuery } from "@/lib/nhost";
 import {
-  MES_INFO, TRANSACOES_DO_MES, ATIVOS, TODOS_RECORRENTES_CUSTOS, METAS, EXTRATO_RANGE, INVESTIMENTOS,
+  MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE,
 } from "@/lib/queries";
-import {
-  adicionarAvulso, adicionarRecorrente, adicionarCustoFixo,
-  toggleRecorrente, toggleCustoFixo, retirarDaMeta,
-  adicionarMeta, guardarNaMeta, deletarMeta, deletarAvulso,
-  guardarNoInvestimento, retirarDoInvestimento,
-} from "./actions";
+import { adicionarAvulso, deletarAvulso } from "./actions";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -26,8 +21,7 @@ export default async function Home({ searchParams }) {
   const sp = await searchParams;
   const mesYYYYMM = sp.mes || new Date().toISOString().slice(0, 7);
   const erro =
-  sp.erro === "retirada" ? "Você não pode retirar mais do que já guardou nessa meta." :
-  sp.erro === "aporte_excede" ? "Esse aporte ultrapassaria o valor alvo da meta." :
+  sp.erro === "valor_invalido" ? "Informe um valor válido, maior que zero." :
   null;
   const mesData = primeiroDia(mesYYYYMM);
 
@@ -53,7 +47,6 @@ export default async function Home({ searchParams }) {
 
   const entradasReais = entradas.filter(e => e.origem !== "meta_retirada");
   const saidasReais = saidas.filter(s => s.origem !== "meta_aporte");
-  
 
   const totalEntradasReais = entradasReais.reduce((s, e) => s + Number(e.valor), 0);
   const totalSaidasReais = saidasReais.reduce((s, e) => s + Number(e.valor), 0);
@@ -61,19 +54,22 @@ export default async function Home({ searchParams }) {
   const totalAportado = saidas.filter(s => s.origem === "meta_aporte").reduce((s, e) => s + Number(e.valor), 0);
   const totalRetirado = entradas.filter(e => e.origem === "meta_retirada").reduce((s, e) => s + Number(e.valor), 0);
 
-  // saldo de caixa continua sendo o cálculo original (com tudo incluso)
+  // saldo do mês (isolado, com tudo incluso)
   const totalEntradas = entradas.reduce((s, e) => s + Number(e.valor), 0);
   const totalSaidas = saidas.reduce((s, e) => s + Number(e.valor), 0);
-  const saldo = totalEntradas - totalSaidas;
+  const saldoDoMes = totalEntradas - totalSaidas;
 
-  // recorrentes/custos fixos (gestão, independe do mês)
-  const { recorrentes: todosRecorrentes, custos_fixos: todosCustos } = await nhostQuery(TODOS_RECORRENTES_CUSTOS);
-
-  // metas
-  const { metas } = await nhostQuery(METAS);
-
-  // investimentos
-  const { investimentos } = await nhostQuery(INVESTIMENTOS);
+  // saldo acumulado: soma o saldo de todos os meses anteriores (já fechados) + o saldo deste mês
+  let saldoAnterior = 0;
+  if (mesInfo) {
+    const { meses: mesesAnteriores } = await nhostQuery(SALDO_ANTES_DE, { antes: mesData });
+    saldoAnterior = mesesAnteriores.reduce((acc, m) => {
+      const ent = m.transacoes_mes.filter(t => t.tipo === "entrada").reduce((s, t) => s + Number(t.valor), 0);
+      const sai = m.transacoes_mes.filter(t => t.tipo === "saida").reduce((s, t) => s + Number(t.valor), 0);
+      return acc + (ent - sai);
+    }, 0);
+  }
+  const saldo = saldoAnterior + saldoDoMes;
 
   // extrato de intervalo (só roda se vier de/ate na URL)
   let extrato = null;
@@ -119,7 +115,7 @@ export default async function Home({ searchParams }) {
   return (
     <div className="wrap">
       <h1>Painel financeiro</h1>
-      <p className="sub">Entradas, custos fixos e metas — mês a mês.</p>
+      <p className="sub">Entradas e saídas do mês, mês a mês.</p>
       {erro && (
         <Toast mensagem={erro} />
       )}
@@ -167,6 +163,7 @@ export default async function Home({ searchParams }) {
               <form action={adicionarAvulso} className="add-form">
                 <input type="hidden" name="id_mes" value={mesInfo.id_mes} />
                 <input type="hidden" name="tipo" value="entrada" />
+                <input type="hidden" name="mes" value={mesYYYYMM} />
                 <input className="name" name="nome" placeholder="Entrada avulsa" required />
                 <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
                 <button type="submit">+</button>
@@ -195,6 +192,7 @@ export default async function Home({ searchParams }) {
               <form action={adicionarAvulso} className="add-form">
                 <input type="hidden" name="id_mes" value={mesInfo.id_mes} />
                 <input type="hidden" name="tipo" value="saida" />
+                <input type="hidden" name="mes" value={mesYYYYMM} />
                 <input className="name" name="nome" placeholder="Saída avulsa" required />
                 <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
                 <button type="submit">+</button>
@@ -203,121 +201,6 @@ export default async function Home({ searchParams }) {
           </section>
         </>
       )}
-
-      <section>
-        <h2>Recorrentes <small>(entradas fixas — controle geral, não muda por mês)</small></h2>
-        {todosRecorrentes.map((r) => (
-          <div className="item-row" key={r.id_recorrente}>
-            <span className="stamp ok" style={{ opacity: r.status ? 1 : 0.35 }}>{r.status ? "ativo" : "inativo"}</span>
-            <span className="name">{r.nome}</span>
-            <span className="value">{fmt(r.valor)}</span>
-            <form action={toggleRecorrente}>
-              <input type="hidden" name="id" value={r.id_recorrente} />
-              <input type="hidden" name="status" value={r.status} />
-              <button className="del" type="submit">{r.status ? "desativar" : "ativar"}</button>
-            </form>
-          </div>
-        ))}
-        <form action={adicionarRecorrente} className="add-form">
-          <input className="name" name="nome" placeholder="Nome" required />
-          <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-          <button type="submit">+</button>
-        </form>
-      </section>
-
-      <section>
-        <h2>Custos fixos <small>(controle geral, não muda por mês)</small></h2>
-        {todosCustos.map((c) => (
-          <div className="item-row" key={c.id_custo_fx}>
-            <span className="stamp ok" style={{ opacity: c.status ? 1 : 0.35 }}>{c.status ? "ativo" : "inativo"}</span>
-            <span className="name">{c.nome}</span>
-            <span className="value">{fmt(c.valor)}</span>
-            <form action={toggleCustoFixo}>
-              <input type="hidden" name="id" value={c.id_custo_fx} />
-              <input type="hidden" name="status" value={c.status} />
-              <button className="del" type="submit">{c.status ? "desativar" : "ativar"}</button>
-            </form>
-          </div>
-        ))}
-        <form action={adicionarCustoFixo} className="add-form">
-          <input className="name" name="nome" placeholder="Nome" required />
-          <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-          <button type="submit">+</button>
-        </form>
-      </section>
-
-      <section>
-        <h2>Metas</h2>
-        {metas.length === 0 && <div className="empty">Nenhuma meta cadastrada.</div>}
-        {metas.map((g) => {
-          const pct = Math.min(100, Math.round((g.valor_atual / g.meta) * 100));
-          return (
-            <div className="goal-card" key={g.id_meta}>
-              <div className="goal-nums"><strong>{g.nome}</strong> — {fmt(g.valor_atual)} de {fmt(g.meta)} · {pct}%</div>
-              <div className="goal-bar-bg"><div className="goal-bar-fill" style={{ width: `${pct}%` }} /></div>
-              <div className="goal-edit">
-                <form action={guardarNaMeta} style={{ display: "flex", gap: 8 }}>
-                  <input type="hidden" name="id" value={g.id_meta} />
-                  <input type="hidden" name="nome_meta" value={g.nome} />
-                  <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-                  <input type="hidden" name="mes" value={mesYYYYMM} />
-                  <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                  <button type="submit">guardar</button>
-                </form>
-                <form action={retirarDaMeta} style={{ display: "flex", gap: 8 }}>
-                  <input type="hidden" name="id" value={g.id_meta} />
-                  <input type="hidden" name="nome_meta" value={g.nome} />
-                  <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-                  <input type="hidden" name="mes" value={mesYYYYMM} />
-                  <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                  <button type="submit">retirar</button>
-                </form>
-                <form action={deletarMeta}>
-                  <input type="hidden" name="id" value={g.id_meta} />
-                  <button className="goal-remove" type="submit">remover</button>
-                </form>
-              </div>
-              <a href={`/metas/${g.id_meta}`} className="btn-link primary">ver itens →</a>
-            </div>
-          );
-        })}
-        <form action={adicionarMeta} className="add-form">
-          <input className="name" name="nome" placeholder="Nome da meta" required />
-          <input className="value" name="meta" placeholder="Valor alvo" type="number" step="0.01" required />
-          <button type="submit">+</button>
-        </form>
-      </section>
-      
-      <section>
-        <h2>Investimentos</h2>
-        {investimentos.map((inv) => (
-          <div className="goal-card" key={inv.id_investimento}>
-            <div className="goal-nums">
-              <strong>{inv.nome}</strong> — {fmt(inv.valor_atual)}
-              <span style={{fontSize: 12, color: "var(--ink-soft)"}}> · {inv.percentual_cdi}% do CDI ({inv.cdi_atual}% a.a.)</span>
-            </div>
-            <div className="goal-edit">
-              <form action={guardarNoInvestimento} style={{display:"flex", gap:8}}>
-                <input type="hidden" name="id" value={inv.id_investimento} />
-                <input type="hidden" name="nome" value={inv.nome} />
-                <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-                <input type="hidden" name="mes" value={mesYYYYMM} />
-                <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                <button type="submit">guardar</button>
-              </form>
-              <form action={retirarDoInvestimento} style={{display:"flex", gap:8}}>
-                <input type="hidden" name="id" value={inv.id_investimento} />
-                <input type="hidden" name="nome" value={inv.nome} />
-                <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-                <input type="hidden" name="mes" value={mesYYYYMM} />
-                <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                <button type="submit">retirar</button>
-              </form>
-            </div>
-            <a href={`/investimentos/${inv.id_investimento}`} className="btn-link primary">ver detalhes →</a>
-          </div>
-        ))}
-      </section>
 
       <section>
         <h2>Extrato por período</h2>

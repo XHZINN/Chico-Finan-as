@@ -24,6 +24,22 @@ body{
 
 .wrap{max-width:720px;margin:0 auto;padding:24px 16px 60px;}
 
+.navbar{
+  max-width:720px;margin:0 auto;padding:14px 16px;
+  display:flex;gap:6px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);
+  background:var(--paper-2);
+}
+.navbar-link{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.03em;
+  color:var(--ink-soft);text-decoration:none;
+  padding:6px 10px;border-radius:4px;border:1px solid transparent;
+}
+.navbar-link:hover{color:var(--ink);border-color:var(--line);}
+.navbar-link.active{
+  color:var(--ink);background:var(--paper);border-color:var(--line);font-weight:500;
+}
+
 h1{
   font-family:'Fraunces',serif;
   font-weight:600;

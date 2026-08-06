@@ -57,6 +57,18 @@ export const TOGGLE_CUSTO_FIXO = `
   }
 `;
 
+export const EDITAR_RECORRENTE = `
+  mutation EditarRecorrente($id: uuid!, $nome: String!, $valor: numeric!) {
+    update_recorrentes_by_pk(pk_columns: { id_recorrente: $id }, _set: { nome: $nome, valor: $valor }) { id_recorrente }
+  }
+`;
+
+export const EDITAR_CUSTO_FIXO = `
+  mutation EditarCustoFixo($id: uuid!, $nome: String!, $valor: numeric!) {
+    update_custos_fixos_by_pk(pk_columns: { id_custo_fx: $id }, _set: { nome: $nome, valor: $valor }) { id_custo_fx }
+  }
+`;
+
 export const INSERIR_META = `
   mutation InserirMeta($nome: String!, $meta: numeric!) {
     insert_metas_one(object: { nome: $nome, meta: $meta, valor_atual: 0 }) { id_meta }
@@ -107,6 +119,15 @@ export const EXTRATO_RANGE = `
       mes
       fechado
       transacoes_mes { valor tipo origem }
+    }
+  }
+`;
+
+export const SALDO_ANTES_DE = `
+  query SaldoAntesDe($antes: date!) {
+    meses(where: { mes: { _lt: $antes } }, order_by: { mes: asc }) {
+      mes
+      transacoes_mes { valor tipo }
     }
   }
 `;
@@ -184,6 +205,15 @@ export const PARCELAMENTOS_ATIVOS = `
     parcelamentos(where: { ativo: { _eq: true } }, order_by: { criado_em: desc }) {
       id_parcelamento descricao valor_parcela qtd_parcelas parcelas_pagas proximo_mes
     }
+  }
+`;
+
+export const INSERIR_INVESTIMENTO = `
+  mutation InserirInvestimento($nome: String!, $tipo: String!, $valor_investido: numeric!) {
+    insert_investimentos_one(object: {
+      nome: $nome, tipo: $tipo, valor_atual: $valor_investido,
+      percentual_cdi: 0, cdi_atual: 0
+    }) { id_investimento }
   }
 `;
 

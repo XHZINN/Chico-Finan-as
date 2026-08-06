@@ -1,12 +1,18 @@
+import Toast from "../../Toast";
 import { nhostQuery } from "@/lib/nhost";
-import { INVESTIMENTO_BY_ID, TRANSACOES_INVESTIMENTO } from "@/lib/queries";
+import { INVESTIMENTO_BY_ID, TRANSACOES_INVESTIMENTO, MES_INFO } from "@/lib/queries";
 import { guardarNoInvestimento, retirarDoInvestimento, atualizarValorInvestimento, atualizarTaxaInvestimento } from "../../actions";
 
 function fmt(n) { return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 }); }
 
-export default async function InvestimentoDetalhe({ params }) {
+export default async function InvestimentoDetalhe({ params, searchParams }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const erro = sp.erro === "valor_invalido" ? "Informe um valor válido, maior que zero." : null;
   const mesYYYYMM = new Date().toISOString().slice(0, 7);
+
+  const { meses } = await nhostQuery(MES_INFO, { mes: mesYYYYMM + "-01" });
+  const mesInfo = meses[0];
 
   const { investimentos_by_pk: inv } = await nhostQuery(INVESTIMENTO_BY_ID, { id });
   const { transacoes_mes } = await nhostQuery(TRANSACOES_INVESTIMENTO, { id });
@@ -21,8 +27,9 @@ export default async function InvestimentoDetalhe({ params }) {
 
   return (
     <div className="wrap">
-      <a href="/" className="btn-link">&larr; voltar</a>
+      <a href="/investimentos" className="btn-link">&larr; voltar</a>
       <h1>{inv.nome}</h1>
+      {erro && <Toast mensagem={erro} />}
 
       <div className="receipt">
         <div className="receipt-row"><span className="label">Total guardado</span><span>{fmt(totalGuardado)}</span></div>
@@ -42,14 +49,16 @@ export default async function InvestimentoDetalhe({ params }) {
           <form action={guardarNoInvestimento} style={{display: "flex", gap: 8}}>
             <input type="hidden" name="id" value={inv.id_investimento} />
             <input type="hidden" name="nome" value={inv.nome} />
-            <input type="hidden" name="mes" value={mesYYYYMM} />
+            <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+            <input type="hidden" name="redirect_to" value={`/investimentos/${inv.id_investimento}`} />
             <input name="valor" type="number" step="0.01" placeholder="valor" required />
             <button type="submit">guardar</button>
           </form>
           <form action={retirarDoInvestimento} style={{display: "flex", gap: 8}}>
             <input type="hidden" name="id" value={inv.id_investimento} />
             <input type="hidden" name="nome" value={inv.nome} />
-            <input type="hidden" name="mes" value={mesYYYYMM} />
+            <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+            <input type="hidden" name="redirect_to" value={`/investimentos/${inv.id_investimento}`} />
             <input name="valor" type="number" step="0.01" placeholder="valor" required />
             <button type="submit">retirar</button>
           </form>
