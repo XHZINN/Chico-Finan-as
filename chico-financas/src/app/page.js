@@ -1,9 +1,10 @@
 import Toast from "./Toast";
+import ListaTransacoes from "./components/ListaTransacoes";
 import { nhostQuery } from "@/lib/nhost";
 import {
   MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE,
 } from "@/lib/queries";
-import { adicionarAvulso, deletarAvulso, confirmarRecorrente, confirmarCustoFixo } from "./actions";
+import { adicionarAvulso, confirmarRecorrente, confirmarCustoFixo } from "./actions";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -137,21 +138,16 @@ export default async function Home({ searchParams }) {
         <>
           <section>
             <h2>Entradas</h2>
-            {entradas.length === 0 && <div className="empty">Nenhuma entrada neste mês.</div>}
-            {entradas.map((e) => (
-              <div className="item-row" key={e.id_transacao}>
-                {e.origem === "recorrente" && <span className="stamp ok">recorrente</span>}
-                {e.origem === "meta_retirada" && <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>meta</span>}
-                <span className="name">{e.nome}</span>
-                <span className="value">{fmt(e.valor)}</span>
-                {(e.origem === "avulso" || e.origem === "recorrente") && !mesInfo.fechado && (
-                  <form action={deletarAvulso}>
-                    <input type="hidden" name="id" value={e.id_transacao} />
-                    <button className="del" type="submit">×</button>
-                  </form>
-                )}
-              </div>
-            ))}
+            <ListaTransacoes
+              items={entradas}
+              stamps={{
+                recorrente: { texto: "recorrente", teal: false },
+                meta_retirada: { texto: "meta", teal: true },
+              }}
+              deletavelOrigens={["avulso", "recorrente"]}
+              mesFechado={mesInfo.fechado}
+              vazioTexto="Nenhuma entrada neste mês."
+            />
             {!mesInfo.fechado && (
               <form action={adicionarAvulso} className="add-form">
                 <input type="hidden" name="id_mes" value={mesInfo.id_mes} />
@@ -166,21 +162,16 @@ export default async function Home({ searchParams }) {
 
           <section>
             <h2>Saídas</h2>
-            {saidas.length === 0 && <div className="empty">Nenhuma saída neste mês.</div>}
-            {saidas.map((s) => (
-              <div className="item-row" key={s.id_transacao}>
-                {s.origem === "custo_fixo" && <span className="stamp ok">fixo</span>}
-                {s.origem === "meta_aporte" && <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>meta</span>}
-                <span className="name">{s.nome}</span>
-                <span className="value">{fmt(s.valor)}</span>
-                {(s.origem === "avulso" || s.origem === "custo_fixo") && !mesInfo.fechado && (
-                  <form action={deletarAvulso}>
-                    <input type="hidden" name="id" value={s.id_transacao} />
-                    <button className="del" type="submit">×</button>
-                  </form>
-                )}
-              </div>
-            ))}
+            <ListaTransacoes
+              items={saidas}
+              stamps={{
+                custo_fixo: { texto: "fixo", teal: false },
+                meta_aporte: { texto: "meta", teal: true },
+              }}
+              deletavelOrigens={["avulso", "custo_fixo"]}
+              mesFechado={mesInfo.fechado}
+              vazioTexto="Nenhuma saída neste mês."
+            />
             {!mesInfo.fechado && (
               <form action={adicionarAvulso} className="add-form">
                 <input type="hidden" name="id_mes" value={mesInfo.id_mes} />
