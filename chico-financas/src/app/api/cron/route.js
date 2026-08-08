@@ -7,19 +7,6 @@ const PROXIMO_MES_ABERTO = `
   }
 `;
 
-const ATIVOS_PARA_FECHAMENTO = `
-  query AtivosParaFechamento {
-    recorrentes(where: { status: { _eq: true } }) { nome valor }
-    custos_fixos(where: { status: { _eq: true } }) { nome valor }
-  }
-`;
-
-const INSERIR_TRANSACOES_FECHAMENTO = `
-  mutation InserirTransacoesFechamento($objs: [transacoes_mes_insert_input!]!) {
-    insert_transacoes_mes(objects: $objs) { affected_rows }
-  }
-`;
-
 const FECHAR_MES = `
   mutation FecharMes($id: uuid!) {
     update_meses_by_pk(pk_columns: { id_mes: $id }, _set: { fechado: true }) { id_mes }
@@ -79,16 +66,9 @@ async function fecharMesesAtrasados() {
     const mesAberto = meses[0];
     if (!mesAberto || mesAberto.mes >= mesRealAtual) break;
 
-    const { recorrentes, custos_fixos } = await nhostQuery(ATIVOS_PARA_FECHAMENTO);
-    const transacoes = [
-      ...recorrentes.map(r => ({ id_mes: mesAberto.id_mes, nome: r.nome, valor: r.valor, tipo: "entrada", origem: "recorrente" })),
-      ...custos_fixos.map(c => ({ id_mes: mesAberto.id_mes, nome: c.nome, valor: c.valor, tipo: "saida", origem: "custo_fixo" })),
-    ];
-
-    if (transacoes.length > 0) {
-      await nhostQuery(INSERIR_TRANSACOES_FECHAMENTO, { objs: transacoes });
-    }
-
+    // recorrentes/custos fixos não são aplicados automaticamente aqui —
+    // eles só entram no saldo quando confirmados manualmente pelo usuário,
+    // no mês em que a confirmação acontece
     await nhostQuery(FECHAR_MES, { id: mesAberto.id_mes });
 
     const novoMes = proximoMes(mesAberto.mes);

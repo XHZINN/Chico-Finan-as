@@ -52,6 +52,30 @@ export async function adicionarCustoFixo(formData) {
   revalidatePath("/");
 }
 
+export async function confirmarRecorrente(formData) {
+  const id_mes = formData.get("id_mes");
+  const nome = formData.get("nome");
+  const valor = parseFloat(formData.get("valor"));
+  const mes = formData.get("mes");
+
+  if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
+
+  await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "entrada", origem: "recorrente" });
+  revalidatePath("/");
+}
+
+export async function confirmarCustoFixo(formData) {
+  const id_mes = formData.get("id_mes");
+  const nome = formData.get("nome");
+  const valor = parseFloat(formData.get("valor"));
+  const mes = formData.get("mes");
+
+  if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
+
+  await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "saida", origem: "custo_fixo" });
+  revalidatePath("/");
+}
+
 export async function toggleRecorrente(formData) {
   const id = formData.get("id");
   const status = formData.get("status") === "true";

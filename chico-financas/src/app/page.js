@@ -3,7 +3,7 @@ import { nhostQuery } from "@/lib/nhost";
 import {
   MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE,
 } from "@/lib/queries";
-import { adicionarAvulso, deletarAvulso } from "./actions";
+import { adicionarAvulso, deletarAvulso, confirmarRecorrente, confirmarCustoFixo } from "./actions";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -31,6 +31,8 @@ export default async function Home({ searchParams }) {
 
   let entradas = [];
   let saidas = [];
+  let recorrentesPendentes = [];
+  let custosPendentes = [];
 
   if (mesInfo) {
     const { transacoes_mes } = await nhostQuery(TRANSACOES_DO_MES, { id_mes: mesInfo.id_mes });
@@ -38,10 +40,12 @@ export default async function Home({ searchParams }) {
     saidas = transacoes_mes.filter(t => t.tipo === "saida");
 
     if (!mesInfo.fechado) {
-      // mês aberto: soma o que ainda não foi congelado
+      // mês aberto: recorrentes/custos ativos que ainda não foram confirmados neste mês
       const { recorrentes, custos_fixos } = await nhostQuery(ATIVOS);
-      entradas = [...entradas, ...recorrentes.map(r => ({ id_transacao: "r-" + r.id_recorrente, nome: r.nome, valor: r.valor, tipo: "entrada", origem: "recorrente" }))];
-      saidas = [...saidas, ...custos_fixos.map(c => ({ id_transacao: "c-" + c.id_custo_fx, nome: c.nome, valor: c.valor, tipo: "saida", origem: "custo_fixo" }))];
+      const nomesConfirmadosEntrada = new Set(entradas.filter(e => e.origem === "recorrente").map(e => e.nome));
+      const nomesConfirmadosSaida = new Set(saidas.filter(s => s.origem === "custo_fixo").map(s => s.nome));
+      recorrentesPendentes = recorrentes.filter(r => !nomesConfirmadosEntrada.has(r.nome));
+      custosPendentes = custos_fixos.filter(c => !nomesConfirmadosSaida.has(c.nome));
     }
   }
 
@@ -54,7 +58,7 @@ export default async function Home({ searchParams }) {
   const totalAportado = saidas.filter(s => s.origem === "meta_aporte").reduce((s, e) => s + Number(e.valor), 0);
   const totalRetirado = entradas.filter(e => e.origem === "meta_retirada").reduce((s, e) => s + Number(e.valor), 0);
 
-  // saldo do mês (isolado, com tudo incluso)
+  // saldo do mês (isolado, só o que já foi confirmado/registrado de verdade)
   const totalEntradas = entradas.reduce((s, e) => s + Number(e.valor), 0);
   const totalSaidas = saidas.reduce((s, e) => s + Number(e.valor), 0);
   const saldoDoMes = totalEntradas - totalSaidas;
@@ -79,24 +83,13 @@ export default async function Home({ searchParams }) {
       fim: primeiroDia(sp.ate),
     });
 
-    let ativosExtras = null;
-    const precisaAtivos = mesesRange.some(m => !m.fechado);
-    if (precisaAtivos) {
-      ativosExtras = await nhostQuery(ATIVOS);
-    }
-
     const porMes = mesesRange.map(m => {
-      let ent = m.transacoes_mes
+      const ent = m.transacoes_mes
         .filter(t => t.tipo === "entrada" && t.origem !== "meta_retirada")
         .reduce((s, t) => s + Number(t.valor), 0);
-      let sai = m.transacoes_mes
+      const sai = m.transacoes_mes
         .filter(t => t.tipo === "saida" && t.origem !== "meta_aporte")
         .reduce((s, t) => s + Number(t.valor), 0);
-
-      if (!m.fechado && ativosExtras) {
-        ent += ativosExtras.recorrentes.reduce((s, r) => s + Number(r.valor), 0);
-        sai += ativosExtras.custos_fixos.reduce((s, c) => s + Number(c.valor), 0);
-      }
       return { mes: m.mes, entradas: ent, saidas: sai, saldo: ent - sai };
     });
 
@@ -151,7 +144,7 @@ export default async function Home({ searchParams }) {
                 {e.origem === "meta_retirada" && <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>meta</span>}
                 <span className="name">{e.nome}</span>
                 <span className="value">{fmt(e.valor)}</span>
-                {e.origem === "avulso" && !mesInfo.fechado && (
+                {(e.origem === "avulso" || e.origem === "recorrente") && !mesInfo.fechado && (
                   <form action={deletarAvulso}>
                     <input type="hidden" name="id" value={e.id_transacao} />
                     <button className="del" type="submit">×</button>
@@ -180,7 +173,7 @@ export default async function Home({ searchParams }) {
                 {s.origem === "meta_aporte" && <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>meta</span>}
                 <span className="name">{s.nome}</span>
                 <span className="value">{fmt(s.valor)}</span>
-                {s.origem === "avulso" && !mesInfo.fechado && (
+                {(s.origem === "avulso" || s.origem === "custo_fixo") && !mesInfo.fechado && (
                   <form action={deletarAvulso}>
                     <input type="hidden" name="id" value={s.id_transacao} />
                     <button className="del" type="submit">×</button>
@@ -199,6 +192,40 @@ export default async function Home({ searchParams }) {
               </form>
             )}
           </section>
+
+          {!mesInfo.fechado && (recorrentesPendentes.length > 0 || custosPendentes.length > 0) && (
+            <section>
+              <h2>Pendentes <small>(ainda não confirmados neste mês)</small></h2>
+              {recorrentesPendentes.map((r) => (
+                <div className="item-row" key={r.id_recorrente}>
+                  <span className="stamp ok" style={{opacity: 0.6}}>recorrente</span>
+                  <span className="name">{r.nome}</span>
+                  <span className="value">{fmt(r.valor)}</span>
+                  <form action={confirmarRecorrente}>
+                    <input type="hidden" name="id_mes" value={mesInfo.id_mes} />
+                    <input type="hidden" name="mes" value={mesYYYYMM} />
+                    <input type="hidden" name="nome" value={r.nome} />
+                    <input type="hidden" name="valor" value={r.valor} />
+                    <button className="btn-link" type="submit">confirmar</button>
+                  </form>
+                </div>
+              ))}
+              {custosPendentes.map((c) => (
+                <div className="item-row" key={c.id_custo_fx}>
+                  <span className="stamp ok" style={{opacity: 0.6}}>fixo</span>
+                  <span className="name">{c.nome}</span>
+                  <span className="value">{fmt(c.valor)}</span>
+                  <form action={confirmarCustoFixo}>
+                    <input type="hidden" name="id_mes" value={mesInfo.id_mes} />
+                    <input type="hidden" name="mes" value={mesYYYYMM} />
+                    <input type="hidden" name="nome" value={c.nome} />
+                    <input type="hidden" name="valor" value={c.valor} />
+                    <button className="btn-link" type="submit">confirmar</button>
+                  </form>
+                </div>
+              ))}
+            </section>
+          )}
         </>
       )}
 

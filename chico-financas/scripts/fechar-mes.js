@@ -34,33 +34,15 @@ async function fecharMesesAtrasados() {
     const mesAberto = meses[0];
     if (!mesAberto || mesAberto.mes >= mesRealAtual) break; // nada pra fechar
 
-    // 1. snapshot dos recorrentes e custos fixos ativos
-    const { recorrentes, custos_fixos } = await query(`
-      query {
-        recorrentes(where: {status: {_eq: true}}) { nome valor }
-        custos_fixos(where: {status: {_eq: true}}) { nome valor }
-      }
-    `);
-
-    const transacoes = [
-      ...recorrentes.map(r => ({ id_mes: mesAberto.id_mes, nome: r.nome, valor: r.valor, tipo: "entrada", origem: "recorrente" })),
-      ...custos_fixos.map(c => ({ id_mes: mesAberto.id_mes, nome: c.nome, valor: c.valor, tipo: "saida", origem: "custo_fixo" })),
-    ];
-
-    if (transacoes.length > 0) {
-      await query(`
-        mutation($objs: [transacoes_mes_insert_input!]!) {
-          insert_transacoes_mes(objects: $objs) { affected_rows }
-        }
-      `, { objs: transacoes });
-    }
-
-    // 2. marca o mês como fechado
+    // 1. marca o mês como fechado
+    // (recorrentes/custos fixos não são mais aplicados automaticamente aqui —
+    // eles só entram no saldo quando confirmados manualmente pelo usuário,
+    // no mês em que a confirmação acontece)
     await query(`
       mutation($id: uuid!) { update_meses_by_pk(pk_columns: {id_mes: $id}, _set: {fechado: true}) { id_mes } }
     `, { id: mesAberto.id_mes });
 
-    // 3. abre o próximo mês
+    // 2. abre o próximo mês
     const novoMes = proximoMes(mesAberto.mes);
     await query(`
       mutation($mes: date!) { insert_meses_one(object: {mes: $mes, fechado: false}, on_conflict: {constraint: meses_mes_key, update_columns: []}) { id_mes } }
