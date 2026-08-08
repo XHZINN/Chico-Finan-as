@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { logout } from "../login/actions";
 
 const LINKS = [
   { href: "/", label: "Painel" },
@@ -12,6 +13,8 @@ const LINKS = [
 export default function NavBar() {
   const pathname = usePathname();
 
+  if (pathname === "/login") return null;
+
   return (
     <nav className="navbar">
       {LINKS.map((link) => {
@@ -22,6 +25,9 @@ export default function NavBar() {
           </a>
         );
       })}
+      <form action={logout} style={{ marginLeft: "auto" }}>
+        <button type="submit" className="navbar-link" style={{ background: "none", border: "none", font: "inherit", cursor: "pointer" }}>sair</button>
+      </form>
     </nav>
   );
 }

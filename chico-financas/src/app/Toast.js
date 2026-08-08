@@ -13,7 +13,10 @@ export default function Toast({ mensagem }) {
     const timer = setTimeout(() => {
       setVisivel(false);
       // limpa o ?erro= da URL depois de sumir, pra não reaparecer num refresh
-      router.replace(window.location.pathname + window.location.search.replace(/[?&]erro=[^&]*/, ""));
+      const params = new URLSearchParams(window.location.search);
+      params.delete("erro");
+      const query = params.toString();
+      router.replace(window.location.pathname + (query ? `?${query}` : ""));
     }, 3500);
     return () => clearTimeout(timer);
   }, [mensagem]);
