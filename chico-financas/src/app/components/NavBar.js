@@ -8,6 +8,8 @@ const LINKS = [
   { href: "/recorrentes", label: "Recorrentes & Custos" },
   { href: "/metas", label: "Metas" },
   { href: "/investimentos", label: "Investimentos" },
+  { href: "/categorias", label: "Categorias" },
+  { href: "/relatorios", label: "Relatórios" },
 ];
 
 export default function NavBar() {

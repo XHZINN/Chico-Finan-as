@@ -2,7 +2,7 @@ import Toast from "./Toast";
 import ListaTransacoes from "./components/ListaTransacoes";
 import { nhostQuery } from "@/lib/nhost";
 import {
-  MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE,
+  MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE, CATEGORIAS_COM_PALAVRAS,
 } from "@/lib/queries";
 import { adicionarAvulso, confirmarRecorrente, confirmarCustoFixo } from "./actions";
 
@@ -29,6 +29,8 @@ export default async function Home({ searchParams }) {
   // dados do mês navegado
   const { meses: mesRows } = await nhostQuery(MES_INFO, { mes: mesData });
   const mesInfo = mesRows[0];
+
+  const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
 
   let entradas = [];
   let saidas = [];
@@ -91,7 +93,11 @@ export default async function Home({ searchParams }) {
       const sai = m.transacoes_mes
         .filter(t => t.tipo === "saida" && t.origem !== "meta_aporte")
         .reduce((s, t) => s + Number(t.valor), 0);
-      return { mes: m.mes, entradas: ent, saidas: sai, saldo: ent - sai };
+      const itens = m.transacoes_mes.map(t => ({
+        ...t,
+        data: new Date(t.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      }));
+      return { mes: m.mes, entradas: ent, saidas: sai, saldo: ent - sai, itens };
     });
 
     const totalGeral = porMes.reduce((acc, m) => ({
@@ -147,6 +153,7 @@ export default async function Home({ searchParams }) {
               deletavelOrigens={["avulso", "recorrente"]}
               mesFechado={mesInfo.fechado}
               vazioTexto="Nenhuma entrada neste mês."
+              categorias={categorias}
             />
             {!mesInfo.fechado && (
               <form action={adicionarAvulso} className="add-form">
@@ -171,6 +178,7 @@ export default async function Home({ searchParams }) {
               deletavelOrigens={["avulso", "custo_fixo"]}
               mesFechado={mesInfo.fechado}
               vazioTexto="Nenhuma saída neste mês."
+              categorias={categorias}
             />
             {!mesInfo.fechado && (
               <form action={adicionarAvulso} className="add-form">
@@ -239,10 +247,27 @@ export default async function Home({ searchParams }) {
             </div>
 
             {extrato.porMes.map((m) => (
-              <div className="item-row" key={m.mes} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-                <strong>{m.mes.slice(0, 7)}</strong>
-                <span>Entradas: {fmt(m.entradas)} · Saídas: {fmt(m.saidas)} · Saldo: {fmt(m.saldo)}</span>
-              </div>
+              <details key={m.mes}>
+                <summary className="item-row group-summary" style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                  <strong>{m.mes.slice(0, 7)}</strong>
+                  <span>Entradas: {fmt(m.entradas)} · Saídas: {fmt(m.saidas)} · Saldo: {fmt(m.saldo)}</span>
+                </summary>
+                <div className="group-items">
+                  {m.itens.length === 0 && <div className="empty">Nenhum lançamento neste mês.</div>}
+                  {m.itens.map((t, i) => (
+                    <div className="item-row" key={i}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--ink-soft)", minWidth: 40 }}>{t.data}</span>
+                      <span className="name">
+                        {t.nome}
+                        {t.categoria && <small style={{ color: "var(--ink-soft)" }}> · {t.categoria.nome}</small>}
+                      </span>
+                      <span className="value" style={{ color: t.tipo === "entrada" ? "var(--teal)" : "var(--ink)" }}>
+                        {t.tipo === "entrada" ? "+" : "-"}{fmt(t.valor)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </details>
             ))}
           </>
         )}

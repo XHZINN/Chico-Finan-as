@@ -27,9 +27,22 @@ export const METAS = `
   }
 `;
 
+export const TODOS_MESES_COM_TRANSACOES = `
+  query TodosMesesComTransacoes {
+    meses(order_by: { mes: asc }) {
+      mes
+      fechado
+      transacoes_mes {
+        valor tipo origem id_categoria
+        categoria { nome }
+      }
+    }
+  }
+`;
+
 export const INSERIR_AVULSO = `
-  mutation InserirAvulso($id_mes: uuid!, $nome: String!, $valor: numeric!, $tipo: String!) {
-    insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: $tipo, origem: "avulso" }) { id_transacao }
+  mutation InserirAvulso($id_mes: uuid!, $nome: String!, $valor: numeric!, $tipo: String!, $id_categoria: uuid) {
+    insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: $tipo, origem: "avulso", id_categoria: $id_categoria }) { id_transacao }
   }
 `;
 
@@ -93,7 +106,8 @@ export const MES_INFO = `
 export const TRANSACOES_DO_MES = `
   query TransacoesDoMes($id_mes: uuid!) {
     transacoes_mes(where: { id_mes: { _eq: $id_mes } }) {
-      id_transacao nome valor tipo origem
+      id_transacao nome valor tipo origem id_categoria criado_em
+      categoria { nome }
     }
   }
 `;
@@ -118,7 +132,10 @@ export const EXTRATO_RANGE = `
       id_mes
       mes
       fechado
-      transacoes_mes { valor tipo origem }
+      transacoes_mes(order_by: { criado_em: asc }) {
+        nome valor tipo origem criado_em
+        categoria { nome }
+      }
     }
   }
 `;
@@ -139,8 +156,8 @@ export const META_BY_ID = `
 `;
 
 export const INSERIR_TRANSACAO_META = `
-  mutation InserirTransacaoMeta($id_mes: uuid!, $nome: String!, $valor: numeric!, $tipo: String!, $origem: String!) {
-    insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: $tipo, origem: $origem }) { id_transacao }
+  mutation InserirTransacaoMeta($id_mes: uuid!, $nome: String!, $valor: numeric!, $tipo: String!, $origem: String!, $id_categoria: uuid) {
+    insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: $tipo, origem: $origem, id_categoria: $id_categoria }) { id_transacao }
   }
 `;
 
@@ -253,5 +270,56 @@ export const TRANSACOES_INVESTIMENTO = `
 export const INSERIR_TRANSACAO_INVESTIMENTO = `
   mutation InserirTransacaoInvestimento($id_mes: uuid!, $id_investimento: uuid!, $nome: String!, $valor: numeric!, $tipo: String!, $origem: String!) {
     insert_transacoes_mes_one(object: { id_mes: $id_mes, id_investimento: $id_investimento, nome: $nome, valor: $valor, tipo: $tipo, origem: $origem }) { id_transacao }
+  }
+`;
+
+export const CATEGORIAS_COM_PALAVRAS = `
+  query CategoriasComPalavras {
+    categorias(order_by: { criado_em: asc }) {
+      id_categoria
+      nome
+      palavras(order_by: { palavra: asc }) { palavra }
+    }
+  }
+`;
+
+export const INSERIR_CATEGORIA = `
+  mutation InserirCategoria($nome: String!) {
+    insert_categorias_one(object: { nome: $nome }) { id_categoria }
+  }
+`;
+
+export const DELETAR_CATEGORIA = `
+  mutation DeletarCategoria($id: uuid!) {
+    delete_categorias_by_pk(id_categoria: $id) { id_categoria }
+  }
+`;
+
+export const ADICIONAR_PALAVRA = `
+  mutation AdicionarPalavra($id_categoria: uuid!, $palavra: String!) {
+    insert_categoria_palavras_one(object: { id_categoria: $id_categoria, palavra: $palavra }, on_conflict: { constraint: categoria_palavras_pkey, update_columns: [] }) {
+      id_categoria
+    }
+  }
+`;
+
+export const REMOVER_PALAVRA = `
+  mutation RemoverPalavra($id_categoria: uuid!, $palavra: String!) {
+    delete_categoria_palavras_by_pk(id_categoria: $id_categoria, palavra: $palavra) { id_categoria }
+  }
+`;
+
+export const TRANSACOES_PARA_RECATEGORIZAR = `
+  query TransacoesParaRecategorizar {
+    transacoes_mes(where: { origem: { _in: ["avulso", "recorrente", "custo_fixo"] } }) {
+      id_transacao
+      nome
+    }
+  }
+`;
+
+export const ATUALIZAR_CATEGORIA_TRANSACAO = `
+  mutation AtualizarCategoriaTransacao($id: uuid!, $id_categoria: uuid) {
+    update_transacoes_mes_by_pk(pk_columns: { id_transacao: $id }, _set: { id_categoria: $id_categoria }) { id_transacao }
   }
 `;

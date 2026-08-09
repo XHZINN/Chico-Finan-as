@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { nhostQuery } from "@/lib/nhost";
+import { categorizar } from "@/lib/categorizacao";
 import {
   INSERIR_AVULSO, INSERIR_RECORRENTE, INSERIR_CUSTO_FIXO,
   TOGGLE_RECORRENTE, TOGGLE_CUSTO_FIXO, EDITAR_RECORRENTE, EDITAR_CUSTO_FIXO, META_BY_ID,
@@ -10,11 +11,18 @@ import {
   META_COM_ITENS, TOGGLE_ITEM_COMPRADO, INSERIR_PARCELAMENTO, VINCULAR_PARCELAMENTO_ITEM,
   INVESTIMENTO_BY_ID, GUARDAR_NO_INVESTIMENTO, SET_VALOR_INVESTIMENTO,
   ATUALIZAR_TAXA_INVESTIMENTO, INSERIR_TRANSACAO_INVESTIMENTO, INSERIR_INVESTIMENTO,
+  CATEGORIAS_COM_PALAVRAS, INSERIR_CATEGORIA, DELETAR_CATEGORIA, ADICIONAR_PALAVRA, REMOVER_PALAVRA,
+  TRANSACOES_PARA_RECATEGORIZAR, ATUALIZAR_CATEGORIA_TRANSACAO,
 } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
 
 function valorValido(v) {
   return typeof v === "number" && !Number.isNaN(v) && v > 0;
+}
+
+async function resolverCategoria(nome) {
+  const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
+  return categorizar(nome, categorias);
 }
 
 export async function adicionarAvulso(formData) {
@@ -26,7 +34,8 @@ export async function adicionarAvulso(formData) {
 
   if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
 
-  await nhostQuery(INSERIR_AVULSO, { id_mes, nome, valor, tipo });
+  const id_categoria = await resolverCategoria(nome);
+  await nhostQuery(INSERIR_AVULSO, { id_mes, nome, valor, tipo, id_categoria });
   revalidatePath("/");
 }
 
@@ -60,7 +69,8 @@ export async function confirmarRecorrente(formData) {
 
   if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
 
-  await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "entrada", origem: "recorrente" });
+  const id_categoria = await resolverCategoria(nome);
+  await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "entrada", origem: "recorrente", id_categoria });
   revalidatePath("/");
 }
 
@@ -72,7 +82,8 @@ export async function confirmarCustoFixo(formData) {
 
   if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
 
-  await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "saida", origem: "custo_fixo" });
+  const id_categoria = await resolverCategoria(nome);
+  await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "saida", origem: "custo_fixo", id_categoria });
   revalidatePath("/");
 }
 
@@ -394,4 +405,57 @@ export async function atualizarTaxaInvestimento(formData) {
 
   revalidatePath("/investimentos");
   revalidatePath(`/investimentos/${id}`);
+}
+
+export async function criarCategoria(formData) {
+  const nome = (formData.get("nome") || "").trim();
+  if (!nome) redirect(`/categorias?erro=valor_invalido`);
+
+  await nhostQuery(INSERIR_CATEGORIA, { nome });
+  revalidatePath("/categorias");
+}
+
+export async function deletarCategoria(formData) {
+  const id = formData.get("id");
+  await nhostQuery(DELETAR_CATEGORIA, { id });
+  revalidatePath("/categorias");
+  revalidatePath("/");
+}
+
+export async function adicionarPalavra(formData) {
+  const id_categoria = formData.get("id_categoria");
+  const palavra = (formData.get("palavra") || "").trim().toLowerCase();
+  if (!palavra) redirect(`/categorias?erro=valor_invalido`);
+
+  await nhostQuery(ADICIONAR_PALAVRA, { id_categoria, palavra });
+  revalidatePath("/categorias");
+}
+
+export async function removerPalavra(formData) {
+  const id_categoria = formData.get("id_categoria");
+  const palavra = formData.get("palavra");
+  await nhostQuery(REMOVER_PALAVRA, { id_categoria, palavra });
+  revalidatePath("/categorias");
+}
+
+export async function recategorizarTudo() {
+  const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
+  const { transacoes_mes } = await nhostQuery(TRANSACOES_PARA_RECATEGORIZAR);
+
+  for (const t of transacoes_mes) {
+    const id_categoria = categorizar(t.nome, categorias);
+    await nhostQuery(ATUALIZAR_CATEGORIA_TRANSACAO, { id: t.id_transacao, id_categoria });
+  }
+
+  revalidatePath("/categorias");
+  revalidatePath("/");
+  revalidatePath("/relatorios");
+}
+
+export async function atualizarCategoriaTransacao(formData) {
+  const id = formData.get("id");
+  const id_categoria = formData.get("id_categoria") || null;
+  await nhostQuery(ATUALIZAR_CATEGORIA_TRANSACAO, { id, id_categoria });
+  revalidatePath("/");
+  revalidatePath("/relatorios");
 }
