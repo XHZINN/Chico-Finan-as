@@ -28,13 +28,66 @@ function TooltipCard({ active, payload, label }) {
   );
 }
 
+function PizzaPorCategoria({ dados, vazioTexto }) {
+  const total = dados.reduce((s, c) => s + c.valor, 0);
+  if (dados.length === 0) {
+    return <div className="empty">{vazioTexto}</div>;
+  }
+  return (
+    <div style={{ width: "100%", height: 320 }}>
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie
+            data={dados}
+            dataKey="valor"
+            nameKey="nome"
+            innerRadius={60}
+            outerRadius={110}
+            paddingAngle={2}
+            label={({ nome, valor }) => `${nome} ${Math.round((valor / total) * 100)}%`}
+            labelLine={false}
+          >
+            {dados.map((c, i) => (
+              <Cell key={i} fill={c.cor} stroke="var(--paper)" strokeWidth={2} />
+            ))}
+          </Pie>
+          <Tooltip content={<TooltipCard />} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function EvolucaoPorCategoria({ dados, categorias, vazioTexto }) {
+  if (dados.length === 0) {
+    return <div className="empty">{vazioTexto}</div>;
+  }
+  return (
+    <div style={{ width: "100%", height: 320 }}>
+      <ResponsiveContainer>
+        <BarChart data={dados}>
+          <CartesianGrid stroke={GRID_COR} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="mes" tick={EIXO_ESTILO} axisLine={{ stroke: "var(--line)" }} tickLine={false} />
+          <YAxis tick={EIXO_ESTILO} axisLine={false} tickLine={false} width={70} tickFormatter={(v) => fmt(v)} />
+          <Tooltip content={<TooltipCard />} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          {categorias.map((c) => (
+            <Bar key={c.nome} dataKey={c.nome} stackId="cat" fill={c.cor} radius={0} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export default function RelatoriosGraficos({
   mesYYYYMM, mesAnterior, mesSeguinte,
-  gastoPorCategoriaMes, evolucaoMensal, categoriasEvolucao,
+  gastoPorCategoriaMes, entradaPorCategoriaMes,
+  evolucaoMensal, categoriasEvolucao,
+  evolucaoMensalEntrada, categoriasEvolucaoEntrada,
   entradasSaidasTempo, metasInvestimentos,
 }) {
-  const totalMes = gastoPorCategoriaMes.reduce((s, c) => s + c.valor, 0);
-
   return (
     <>
       <section>
@@ -44,54 +97,27 @@ export default function RelatoriosGraficos({
           <span className="month-label">{mesYYYYMM}</span>
           <a href={`/relatorios?mes=${mesSeguinte}`}>&rarr;</a>
         </div>
-        {gastoPorCategoriaMes.length === 0 ? (
-          <div className="empty">Nenhum gasto categorizado neste mês.</div>
-        ) : (
-          <div style={{ width: "100%", height: 320 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={gastoPorCategoriaMes}
-                  dataKey="valor"
-                  nameKey="nome"
-                  innerRadius={60}
-                  outerRadius={110}
-                  paddingAngle={2}
-                  label={({ nome, valor }) => `${nome} ${Math.round((valor / totalMes) * 100)}%`}
-                  labelLine={false}
-                >
-                  {gastoPorCategoriaMes.map((c, i) => (
-                    <Cell key={i} fill={c.cor} stroke="var(--paper)" strokeWidth={2} />
-                  ))}
-                </Pie>
-                <Tooltip content={<TooltipCard />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <PizzaPorCategoria dados={gastoPorCategoriaMes} vazioTexto="Nenhum gasto categorizado neste mês." />
       </section>
 
       <section>
-        <h2>Evolução mensal por categoria <small>(últimos 6 meses)</small></h2>
-        {evolucaoMensal.length === 0 ? (
-          <div className="empty">Sem dados suficientes.</div>
-        ) : (
-          <div style={{ width: "100%", height: 320 }}>
-            <ResponsiveContainer>
-              <BarChart data={evolucaoMensal}>
-                <CartesianGrid stroke={GRID_COR} strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="mes" tick={EIXO_ESTILO} axisLine={{ stroke: "var(--line)" }} tickLine={false} />
-                <YAxis tick={EIXO_ESTILO} axisLine={false} tickLine={false} width={70} tickFormatter={(v) => fmt(v)} />
-                <Tooltip content={<TooltipCard />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                {categoriasEvolucao.map((c) => (
-                  <Bar key={c.nome} dataKey={c.nome} stackId="cat" fill={c.cor} radius={0} />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <h2>Entrada por categoria</h2>
+        <div className="month-nav">
+          <a href={`/relatorios?mes=${mesAnterior}`}>&larr;</a>
+          <span className="month-label">{mesYYYYMM}</span>
+          <a href={`/relatorios?mes=${mesSeguinte}`}>&rarr;</a>
+        </div>
+        <PizzaPorCategoria dados={entradaPorCategoriaMes} vazioTexto="Nenhuma entrada categorizada neste mês." />
+      </section>
+
+      <section>
+        <h2>Evolução mensal de gastos por categoria <small>(últimos 6 meses)</small></h2>
+        <EvolucaoPorCategoria dados={evolucaoMensal} categorias={categoriasEvolucao} vazioTexto="Sem dados suficientes." />
+      </section>
+
+      <section>
+        <h2>Evolução mensal de entradas por categoria <small>(últimos 6 meses)</small></h2>
+        <EvolucaoPorCategoria dados={evolucaoMensalEntrada} categorias={categoriasEvolucaoEntrada} vazioTexto="Sem dados suficientes." />
       </section>
 
       <section>

@@ -12,6 +12,42 @@ function mesAdjacente(mesYYYYMM, delta) {
   return d.toISOString().slice(0, 7);
 }
 
+function nomeCategoria(t) {
+  return t.categoria?.nome || "Sem categoria";
+}
+
+function porCategoriaNoMes(mesRow, tipo, corPorCategoria) {
+  const mapa = new Map();
+  if (!mesRow) return [];
+  for (const t of mesRow.transacoes_mes) {
+    if (t.tipo !== tipo || !ORIGENS_REAIS.includes(t.origem)) continue;
+    const nome = nomeCategoria(t);
+    const atual = mapa.get(nome) || { nome, valor: 0, cor: t.id_categoria ? corPorCategoria.get(t.id_categoria) : COR_SEM_CATEGORIA };
+    atual.valor += Number(t.valor);
+    mapa.set(nome, atual);
+  }
+  return Array.from(mapa.values()).sort((a, b) => b.valor - a.valor);
+}
+
+function evolucaoPorCategoria(ultimosMeses, tipo, corPorCategoria) {
+  const nomesCategorias = new Set();
+  const evolucao = ultimosMeses.map((m) => {
+    const linha = { mes: m.mes.slice(0, 7) };
+    for (const t of m.transacoes_mes) {
+      if (t.tipo !== tipo || !ORIGENS_REAIS.includes(t.origem)) continue;
+      const nome = nomeCategoria(t);
+      nomesCategorias.add(nome);
+      linha[nome] = (linha[nome] || 0) + Number(t.valor);
+    }
+    return linha;
+  });
+  const categoriasUsadas = Array.from(nomesCategorias).map(nome => {
+    const exemplo = ultimosMeses.flatMap(m => m.transacoes_mes).find(t => t.tipo === tipo && nomeCategoria(t) === nome);
+    return { nome, cor: exemplo?.id_categoria ? corPorCategoria.get(exemplo.id_categoria) : COR_SEM_CATEGORIA };
+  });
+  return { evolucao, categoriasUsadas };
+}
+
 export default async function Relatorios({ searchParams }) {
   const sp = await searchParams;
   const mesYYYYMM = sp.mes || new Date().toISOString().slice(0, 7);
@@ -23,47 +59,18 @@ export default async function Relatorios({ searchParams }) {
     nhostQuery(INVESTIMENTOS),
   ]);
 
+  // cores atribuídas por tipo, cada um começando na 1ª cor da paleta
   const corPorCategoria = new Map();
-  categorias.forEach((c, i) => corPorCategoria.set(c.id_categoria, CORES_CATEGORIA[i % CORES_CATEGORIA.length]));
+  categorias.filter(c => c.tipo === "saida").forEach((c, i) => corPorCategoria.set(c.id_categoria, CORES_CATEGORIA[i % CORES_CATEGORIA.length]));
+  categorias.filter(c => c.tipo === "entrada").forEach((c, i) => corPorCategoria.set(c.id_categoria, CORES_CATEGORIA[i % CORES_CATEGORIA.length]));
 
-  function nomeCategoria(t) {
-    return t.categoria?.nome || "Sem categoria";
-  }
-  function corCategoria(t) {
-    return t.id_categoria ? (corPorCategoria.get(t.id_categoria) || COR_SEM_CATEGORIA) : COR_SEM_CATEGORIA;
-  }
-
-  // gasto por categoria no mês navegado
   const mesAtualRow = meses.find(m => m.mes.slice(0, 7) === mesYYYYMM);
-  const gastosPorCategoriaMap = new Map();
-  if (mesAtualRow) {
-    for (const t of mesAtualRow.transacoes_mes) {
-      if (t.tipo !== "saida" || !ORIGENS_REAIS.includes(t.origem)) continue;
-      const nome = nomeCategoria(t);
-      const atual = gastosPorCategoriaMap.get(nome) || { nome, valor: 0, cor: corCategoria(t) };
-      atual.valor += Number(t.valor);
-      gastosPorCategoriaMap.set(nome, atual);
-    }
-  }
-  const gastoPorCategoriaMes = Array.from(gastosPorCategoriaMap.values()).sort((a, b) => b.valor - a.valor);
+  const gastoPorCategoriaMes = porCategoriaNoMes(mesAtualRow, "saida", corPorCategoria);
+  const entradaPorCategoriaMes = porCategoriaNoMes(mesAtualRow, "entrada", corPorCategoria);
 
-  // evolução mensal por categoria — últimos 6 meses
   const ultimosMeses = meses.slice(-6);
-  const nomesCategoriasEvolucao = new Set();
-  const evolucaoMensal = ultimosMeses.map((m) => {
-    const linha = { mes: m.mes.slice(0, 7) };
-    for (const t of m.transacoes_mes) {
-      if (t.tipo !== "saida" || !ORIGENS_REAIS.includes(t.origem)) continue;
-      const nome = nomeCategoria(t);
-      nomesCategoriasEvolucao.add(nome);
-      linha[nome] = (linha[nome] || 0) + Number(t.valor);
-    }
-    return linha;
-  });
-  const categoriasEvolucao = Array.from(nomesCategoriasEvolucao).map(nome => {
-    const exemplo = ultimosMeses.flatMap(m => m.transacoes_mes).find(t => nomeCategoria(t) === nome);
-    return { nome, cor: exemplo ? corCategoria(exemplo) : COR_SEM_CATEGORIA };
-  });
+  const { evolucao: evolucaoMensal, categoriasUsadas: categoriasEvolucao } = evolucaoPorCategoria(ultimosMeses, "saida", corPorCategoria);
+  const { evolucao: evolucaoMensalEntrada, categoriasUsadas: categoriasEvolucaoEntrada } = evolucaoPorCategoria(ultimosMeses, "entrada", corPorCategoria);
 
   // entradas vs saídas reais, todos os meses
   const entradasSaidasTempo = meses.map((m) => {
@@ -88,15 +95,18 @@ export default async function Relatorios({ searchParams }) {
   return (
     <div className="wrap">
       <h1>Relatórios</h1>
-      <p className="sub">Fluxo de gasto por categoria e visão geral financeira.</p>
+      <p className="sub">Fluxo de entradas e gastos por categoria e visão geral financeira.</p>
 
       <RelatoriosGraficos
         mesYYYYMM={mesYYYYMM}
         mesAnterior={mesAnterior}
         mesSeguinte={mesSeguinte}
         gastoPorCategoriaMes={gastoPorCategoriaMes}
+        entradaPorCategoriaMes={entradaPorCategoriaMes}
         evolucaoMensal={evolucaoMensal}
         categoriasEvolucao={categoriasEvolucao}
+        evolucaoMensalEntrada={evolucaoMensalEntrada}
+        categoriasEvolucaoEntrada={categoriasEvolucaoEntrada}
         entradasSaidasTempo={entradasSaidasTempo}
         metasInvestimentos={metasInvestimentos}
       />

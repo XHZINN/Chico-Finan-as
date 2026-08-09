@@ -43,7 +43,7 @@ function SeletorCategoria({ item, categorias }) {
         style={{ fontSize: 12, padding: "2px 4px", border: "1px solid var(--line)", borderRadius: 4, background: "var(--paper-2)", color: "var(--ink)" }}
       >
         <option value="">Sem categoria</option>
-        {categorias.map(c => (
+        {categorias.filter(c => c.tipo === item.tipo).map(c => (
           <option key={c.id_categoria} value={c.id_categoria}>{c.nome}</option>
         ))}
       </select>

@@ -20,9 +20,9 @@ function valorValido(v) {
   return typeof v === "number" && !Number.isNaN(v) && v > 0;
 }
 
-async function resolverCategoria(nome) {
+async function resolverCategoria(nome, tipo) {
   const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
-  return categorizar(nome, categorias);
+  return categorizar(nome, categorias.filter(c => c.tipo === tipo));
 }
 
 export async function adicionarAvulso(formData) {
@@ -34,7 +34,7 @@ export async function adicionarAvulso(formData) {
 
   if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
 
-  const id_categoria = await resolverCategoria(nome);
+  const id_categoria = await resolverCategoria(nome, tipo);
   await nhostQuery(INSERIR_AVULSO, { id_mes, nome, valor, tipo, id_categoria });
   revalidatePath("/");
 }
@@ -69,7 +69,7 @@ export async function confirmarRecorrente(formData) {
 
   if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
 
-  const id_categoria = await resolverCategoria(nome);
+  const id_categoria = await resolverCategoria(nome, "entrada");
   await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "entrada", origem: "recorrente", id_categoria });
   revalidatePath("/");
 }
@@ -82,7 +82,7 @@ export async function confirmarCustoFixo(formData) {
 
   if (!valorValido(valor)) redirect(`/?mes=${mes}&erro=valor_invalido`);
 
-  const id_categoria = await resolverCategoria(nome);
+  const id_categoria = await resolverCategoria(nome, "saida");
   await nhostQuery(INSERIR_TRANSACAO_META, { id_mes, nome, valor, tipo: "saida", origem: "custo_fixo", id_categoria });
   revalidatePath("/");
 }
@@ -409,9 +409,10 @@ export async function atualizarTaxaInvestimento(formData) {
 
 export async function criarCategoria(formData) {
   const nome = (formData.get("nome") || "").trim();
+  const tipo = formData.get("tipo") === "entrada" ? "entrada" : "saida";
   if (!nome) redirect(`/categorias?erro=valor_invalido`);
 
-  await nhostQuery(INSERIR_CATEGORIA, { nome });
+  await nhostQuery(INSERIR_CATEGORIA, { nome, tipo });
   revalidatePath("/categorias");
 }
 
@@ -443,7 +444,7 @@ export async function recategorizarTudo() {
   const { transacoes_mes } = await nhostQuery(TRANSACOES_PARA_RECATEGORIZAR);
 
   for (const t of transacoes_mes) {
-    const id_categoria = categorizar(t.nome, categorias);
+    const id_categoria = categorizar(t.nome, categorias.filter(c => c.tipo === t.tipo));
     await nhostQuery(ATUALIZAR_CATEGORIA_TRANSACAO, { id: t.id_transacao, id_categoria });
   }
 

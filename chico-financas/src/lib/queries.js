@@ -278,14 +278,15 @@ export const CATEGORIAS_COM_PALAVRAS = `
     categorias(order_by: { criado_em: asc }) {
       id_categoria
       nome
+      tipo
       palavras(order_by: { palavra: asc }) { palavra }
     }
   }
 `;
 
 export const INSERIR_CATEGORIA = `
-  mutation InserirCategoria($nome: String!) {
-    insert_categorias_one(object: { nome: $nome }) { id_categoria }
+  mutation InserirCategoria($nome: String!, $tipo: String!) {
+    insert_categorias_one(object: { nome: $nome, tipo: $tipo }) { id_categoria }
   }
 `;
 
@@ -314,6 +315,7 @@ export const TRANSACOES_PARA_RECATEGORIZAR = `
     transacoes_mes(where: { origem: { _in: ["avulso", "recorrente", "custo_fixo"] } }) {
       id_transacao
       nome
+      tipo
     }
   }
 `;
