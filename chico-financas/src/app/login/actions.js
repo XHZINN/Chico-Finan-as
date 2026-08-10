@@ -20,6 +20,9 @@ export async function login(formData) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+    // sem maxAge, o navegador trata como cookie de sessão (some ao fechar).
+    // 10 anos cobre "sem expiração, só sai clicando em sair".
+    maxAge: 60 * 60 * 24 * 365 * 10,
   });
 
   redirect(next);
