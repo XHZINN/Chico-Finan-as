@@ -20,6 +20,20 @@ function valorValido(v) {
   return typeof v === "number" && !Number.isNaN(v) && v > 0;
 }
 
+function proximoMes(mesYYYYMM) {
+  const d = new Date(mesYYYYMM + "-01T00:00:00Z");
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// aceita valor_parcela OU valor_total (formData) + qtd_parcelas, devolve o valor da parcela
+function resolverValorParcela(formData, qtd_parcelas) {
+  const valorParcelaInput = formData.get("valor_parcela");
+  if (valorParcelaInput) return Math.round(parseFloat(valorParcelaInput) * 100) / 100;
+  const valorTotal = parseFloat(formData.get("valor_total"));
+  return Math.round((valorTotal / qtd_parcelas) * 100) / 100;
+}
+
 async function resolverCategoria(nome, tipo) {
   const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
   return categorizar(nome, categorias.filter(c => c.tipo === tipo));
@@ -273,49 +287,43 @@ export async function comprarItemParcelado(formData) {
   const id_item = formData.get("id_item");
   const id_meta = formData.get("id_meta");
   const nome_item = formData.get("nome_item");
-  const valor_total = parseFloat(formData.get("valor_total"));
   const qtd_parcelas = parseInt(formData.get("qtd_parcelas"));
-  const id_mes = formData.get("id_mes");
   const mes = formData.get("mes");
 
-  if (!valorValido(valor_total) || !Number.isInteger(qtd_parcelas) || qtd_parcelas < 1) {
+  const valor_parcela = resolverValorParcela(formData, qtd_parcelas);
+
+  if (!valorValido(valor_parcela) || !Number.isInteger(qtd_parcelas) || qtd_parcelas < 1) {
     redirect(`/metas/${id_meta}?erro=valor_invalido`);
   }
 
-  const valor_parcela = Math.round((valor_total / qtd_parcelas) * 100) / 100;
-
   const { insert_parcelamentos_one } = await nhostQuery(INSERIR_PARCELAMENTO, {
-    descricao: nome_item, valor_parcela, qtd_parcelas, proximo_mes: mes + "-01",
+    descricao: nome_item, valor_parcela, qtd_parcelas, proximo_mes: proximoMes(mes),
   });
   const id_parcelamento = insert_parcelamentos_one.id_parcelamento;
 
   await nhostQuery(VINCULAR_PARCELAMENTO_ITEM, { id_item, id_parcelamento });
 
-  // paga a 1ª parcela já, nesse mês
-  await nhostQuery(INSERIR_TRANSACAO_META, {
-    id_mes, nome: `Parcela 1/${qtd_parcelas}: ${nome_item}`, valor: valor_parcela, tipo: "saida", origem: "parcelamento",
-  });
-
+  // nenhuma parcela é cobrada agora — a 1ª parcela só entra no mês seguinte,
+  // quando o fechamento de mês rola o parcelamento (mesma lógica das demais)
   revalidatePath(`/metas/${id_meta}`);
 }
 
 export async function comprarAvulsoParcelado(formData) {
   const nome = formData.get("nome");
-  const valor_total = parseFloat(formData.get("valor_total"));
   const qtd_parcelas = parseInt(formData.get("qtd_parcelas"));
-  const id_mes = formData.get("id_mes");
   const mes = formData.get("mes");
 
-  const valor_parcela = Math.round((valor_total / qtd_parcelas) * 100) / 100;
+  const valor_parcela = resolverValorParcela(formData, qtd_parcelas);
+
+  if (!nome || !valorValido(valor_parcela) || !Number.isInteger(qtd_parcelas) || qtd_parcelas < 1) {
+    redirect(`/?mes=${mes}&erro=valor_invalido`);
+  }
 
   await nhostQuery(INSERIR_PARCELAMENTO, {
-    descricao: nome, valor_parcela, qtd_parcelas, proximo_mes: mes + "-01",
+    descricao: nome, valor_parcela, qtd_parcelas, proximo_mes: proximoMes(mes),
   });
 
-  await nhostQuery(INSERIR_TRANSACAO_META, {
-    id_mes, nome: `Parcela 1/${qtd_parcelas}: ${nome}`, valor: valor_parcela, tipo: "saida", origem: "parcelamento",
-  });
-
+  // nenhuma parcela é cobrada agora — a 1ª parcela só entra no mês seguinte
   revalidatePath("/");
 }
 

@@ -3,8 +3,9 @@ import ListaTransacoes from "./components/ListaTransacoes";
 import { nhostQuery } from "@/lib/nhost";
 import {
   MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE, CATEGORIAS_COM_PALAVRAS,
+  PARCELAMENTOS_ATIVOS,
 } from "@/lib/queries";
-import { adicionarAvulso, confirmarRecorrente, confirmarCustoFixo } from "./actions";
+import { adicionarAvulso, confirmarRecorrente, confirmarCustoFixo, comprarAvulsoParcelado } from "./actions";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -31,6 +32,7 @@ export default async function Home({ searchParams }) {
   const mesInfo = mesRows[0];
 
   const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
+  const { parcelamentos } = await nhostQuery(PARCELAMENTOS_ATIVOS);
 
   let entradas = [];
   let saidas = [];
@@ -174,6 +176,7 @@ export default async function Home({ searchParams }) {
               stamps={{
                 custo_fixo: { texto: "fixo", teal: false },
                 meta_aporte: { texto: "meta", teal: true },
+                parcelamento: { texto: "parcela", teal: false },
               }}
               deletavelOrigens={["avulso", "custo_fixo"]}
               mesFechado={mesInfo.fechado}
@@ -188,6 +191,30 @@ export default async function Home({ searchParams }) {
                 <input className="name" name="nome" placeholder="Saída avulsa" required />
                 <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
                 <button type="submit">+</button>
+              </form>
+            )}
+          </section>
+
+          <section>
+            <h2>Parcelamentos <small>(a 1ª parcela só entra no mês seguinte)</small></h2>
+            {parcelamentos.length === 0 && <div className="empty">Nenhum parcelamento ativo.</div>}
+            {parcelamentos.map((p) => (
+              <div className="item-row" key={p.id_parcelamento}>
+                <span className="name">{p.descricao}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)", marginRight: 8 }}>
+                  {p.parcelas_pagas}/{p.qtd_parcelas} · próxima {p.proximo_mes?.slice(0, 7)}
+                </span>
+                <span className="value">{fmt(p.valor_parcela)}</span>
+              </div>
+            ))}
+            {!mesInfo.fechado && (
+              <form action={comprarAvulsoParcelado} className="add-form">
+                <input type="hidden" name="mes" value={mesYYYYMM} />
+                <input className="name" name="nome" placeholder="Descrição da compra" required />
+                <input className="value" name="valor_total" placeholder="Valor total" type="number" step="0.01" />
+                <input className="value" name="valor_parcela" placeholder="ou valor da parcela" type="number" step="0.01" />
+                <input name="qtd_parcelas" type="number" placeholder="parcelas" style={{ width: 80 }} required />
+                <button type="submit">parcelar</button>
               </form>
             )}
           </section>

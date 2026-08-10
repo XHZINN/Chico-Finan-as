@@ -87,7 +87,6 @@ export default async function MetaDetalhe({ params, searchParams }) {
                     <input type="hidden" name="id_meta" value={meta.id_meta} />
                     <input type="hidden" name="nome_item" value={item.nome} />
                     <input type="hidden" name="valor_total" value={item.valor_planejado} />
-                    <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
                     <input type="hidden" name="mes" value={mesYYYYMM} />
                     <input name="qtd_parcelas" type="number" placeholder="parcelas" style={{width: 70}} required />
                     <button type="submit">parcelar</button>
