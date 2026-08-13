@@ -448,6 +448,8 @@ export async function removerPalavra(formData) {
 }
 
 export async function recategorizarTudo() {
+  // TRANSACOES_PARA_RECATEGORIZAR já filtra id_categoria nulo — preserva
+  // qualquer categoria já atribuída (manual ou automática) sem sobrescrever
   const { categorias } = await nhostQuery(CATEGORIAS_COM_PALAVRAS);
   const { transacoes_mes } = await nhostQuery(TRANSACOES_PARA_RECATEGORIZAR);
 

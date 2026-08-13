@@ -23,7 +23,10 @@ function primeiroDia(mesYYYYMM) {
 // contábil dentro da meta — o dinheiro já saiu do caixa no aporte, então não
 // deve contar de novo no saldo de caixa nem em nenhum total "real".
 const ORIGENS_NAO_CAIXA = ["meta_compra"];
-const ORIGENS_NAO_REAIS = ["meta_aporte", "meta_retirada", "meta_compra"];
+// meta_aporte/retirada e investimento_aporte/resgate são transferências entre
+// caixa e uma reserva sua (meta ou investimento) — contam no saldo de caixa,
+// mas não são "gasto"/"renda" de verdade, então ficam fora dos totais reais.
+const ORIGENS_NAO_REAIS = ["meta_aporte", "meta_retirada", "meta_compra", "investimento_aporte", "investimento_resgate"];
 
 export default async function Home({ searchParams }) {
   const sp = await searchParams;
@@ -68,6 +71,8 @@ export default async function Home({ searchParams }) {
 
   const totalAportado = saidas.filter(s => s.origem === "meta_aporte").reduce((s, e) => s + Number(e.valor), 0);
   const totalRetirado = entradas.filter(e => e.origem === "meta_retirada").reduce((s, e) => s + Number(e.valor), 0);
+  const totalAplicado = saidas.filter(s => s.origem === "investimento_aporte").reduce((s, e) => s + Number(e.valor), 0);
+  const totalResgatado = entradas.filter(e => e.origem === "investimento_resgate").reduce((s, e) => s + Number(e.valor), 0);
 
   // saldo do mês (isolado, só o que já foi confirmado/registrado de verdade;
   // exclui meta_compra pra não descontar do caixa uma 2ª vez — o dinheiro já
@@ -145,6 +150,8 @@ export default async function Home({ searchParams }) {
             <div className="receipt-row"><span className="label">Saídas reais</span><span>{fmt(totalSaidasReais)}</span></div>
             <div className="receipt-row"><span className="label">Guardado em metas</span><span>{fmt(totalAportado)}</span></div>
             <div className="receipt-row"><span className="label">Retirado de metas</span><span>{fmt(totalRetirado)}</span></div>
+            <div className="receipt-row"><span className="label">Aplicado em investimentos</span><span>{fmt(totalAplicado)}</span></div>
+            <div className="receipt-row"><span className="label">Resgatado de investimentos</span><span>{fmt(totalResgatado)}</span></div>
             <div className="receipt-row total"><span className="label">Saldo de caixa</span><span>{fmt(saldo)}</span></div>
           </>
         )}
@@ -160,6 +167,7 @@ export default async function Home({ searchParams }) {
                 recorrente: { texto: "recorrente", teal: false },
                 meta_retirada: { texto: "meta", teal: true },
                 meta_compra: { texto: "meta", teal: true },
+                investimento_resgate: { texto: "investimento", teal: true },
               }}
               deletavelOrigens={["avulso", "recorrente"]}
               mesFechado={mesInfo.fechado}
@@ -186,6 +194,7 @@ export default async function Home({ searchParams }) {
                 custo_fixo: { texto: "fixo", teal: false },
                 meta_aporte: { texto: "meta", teal: true },
                 meta_compra: { texto: "meta", teal: true },
+                investimento_aporte: { texto: "investimento", teal: true },
                 parcelamento: { texto: "parcela", teal: false },
               }}
               deletavelOrigens={["avulso", "custo_fixo"]}

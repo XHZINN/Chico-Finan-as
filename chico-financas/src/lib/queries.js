@@ -312,7 +312,7 @@ export const REMOVER_PALAVRA = `
 
 export const TRANSACOES_PARA_RECATEGORIZAR = `
   query TransacoesParaRecategorizar {
-    transacoes_mes(where: { origem: { _in: ["avulso", "recorrente", "custo_fixo"] } }) {
+    transacoes_mes(where: { origem: { _in: ["avulso", "recorrente", "custo_fixo"] }, id_categoria: { _is_null: true } }) {
       id_transacao
       nome
       tipo

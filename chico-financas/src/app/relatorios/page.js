@@ -7,7 +7,7 @@ const COR_SEM_CATEGORIA = "#898781";
 const ORIGENS_REAIS = ["avulso", "recorrente", "custo_fixo"];
 // meta_compra é lançamento contábil interno da meta — o dinheiro já saiu do
 // caixa no aporte, não deve contar de novo aqui
-const ORIGENS_NAO_REAIS_FLUXO = ["meta_aporte", "meta_retirada", "meta_compra"];
+const ORIGENS_NAO_REAIS_FLUXO = ["meta_aporte", "meta_retirada", "meta_compra", "investimento_aporte", "investimento_resgate"];
 
 function mesAdjacente(mesYYYYMM, delta) {
   const d = new Date(mesYYYYMM + "-01T00:00:00");

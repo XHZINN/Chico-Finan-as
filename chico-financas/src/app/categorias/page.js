@@ -62,7 +62,7 @@ export default async function Categorias({ searchParams }) {
 
       <section>
         <form action={recategorizarTudo}>
-          <button type="submit" className="btn-link">recategorizar lançamentos existentes</button>
+          <button type="submit" className="btn-link">categorizar lançamentos sem categoria</button>
         </form>
       </section>
 
