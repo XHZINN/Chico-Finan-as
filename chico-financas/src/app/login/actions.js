@@ -2,11 +2,11 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { gerarTokenSessao, comparacaoSegura, SESSION_COOKIE_NAME } from "@/lib/session";
+import { gerarTokenSessao, comparacaoSegura, caminhoSeguro, SESSION_COOKIE_NAME } from "@/lib/session";
 
 export async function login(formData) {
   const senha = formData.get("senha") || "";
-  const next = formData.get("next") || "/";
+  const next = caminhoSeguro(formData.get("next"));
   const senhaEsperada = process.env.AUTH_PASSWORD;
 
   if (!senhaEsperada || !senha || !comparacaoSegura(senha, senhaEsperada)) {

@@ -1,10 +1,11 @@
 import Toast from "../Toast";
+import { caminhoSeguro } from "@/lib/session";
 import { login } from "./actions";
 
 export default async function Login({ searchParams }) {
   const sp = await searchParams;
   const erro = sp.erro === "senha_invalida" ? "Senha incorreta." : null;
-  const next = sp.next || "/";
+  const next = caminhoSeguro(sp.next);
 
   return (
     <div className="wrap">

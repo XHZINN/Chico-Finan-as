@@ -31,3 +31,10 @@ export async function sessaoValida(token) {
 }
 
 export const SESSION_COOKIE_NAME = SESSION_COOKIE;
+
+// só aceita caminho relativo do próprio site — bloqueia URL absoluta/externa
+// (ex: "https://evil.com") e protocol-relative ("//evil.com") no ?next=
+export function caminhoSeguro(next) {
+  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//")) return "/";
+  return next;
+}

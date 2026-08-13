@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { nhostQuery } from "@/lib/nhost";
+import { comparacaoSegura } from "@/lib/session";
 
 const PROXIMO_MES_ABERTO = `
   query ProximoMesAberto {
@@ -107,8 +108,8 @@ async function fecharMesesAtrasados() {
 }
 
 export async function GET(request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const authHeader = request.headers.get("authorization") || "";
+  if (!process.env.CRON_SECRET || !comparacaoSegura(authHeader, `Bearer ${process.env.CRON_SECRET}`)) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
