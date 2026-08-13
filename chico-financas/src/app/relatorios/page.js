@@ -5,6 +5,9 @@ import RelatoriosGraficos from "./RelatoriosGraficos";
 const CORES_CATEGORIA = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 const COR_SEM_CATEGORIA = "#898781";
 const ORIGENS_REAIS = ["avulso", "recorrente", "custo_fixo"];
+// meta_compra é lançamento contábil interno da meta — o dinheiro já saiu do
+// caixa no aporte, não deve contar de novo aqui
+const ORIGENS_NAO_REAIS_FLUXO = ["meta_aporte", "meta_retirada", "meta_compra"];
 
 function mesAdjacente(mesYYYYMM, delta) {
   const d = new Date(mesYYYYMM + "-01T00:00:00");
@@ -75,10 +78,10 @@ export default async function Relatorios({ searchParams }) {
   // entradas vs saídas reais, todos os meses
   const entradasSaidasTempo = meses.map((m) => {
     const entradas = m.transacoes_mes
-      .filter(t => t.tipo === "entrada" && t.origem !== "meta_retirada")
+      .filter(t => t.tipo === "entrada" && !ORIGENS_NAO_REAIS_FLUXO.includes(t.origem))
       .reduce((s, t) => s + Number(t.valor), 0);
     const saidas = m.transacoes_mes
-      .filter(t => t.tipo === "saida" && t.origem !== "meta_aporte")
+      .filter(t => t.tipo === "saida" && !ORIGENS_NAO_REAIS_FLUXO.includes(t.origem))
       .reduce((s, t) => s + Number(t.valor), 0);
     return { mes: m.mes.slice(0, 7), entradas, saidas };
   });

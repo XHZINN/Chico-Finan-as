@@ -19,6 +19,12 @@ function primeiroDia(mesYYYYMM) {
   return mesYYYYMM + "-01";
 }
 
+// meta_compra (marcar/desmarcar item de meta como comprado) é só um lançamento
+// contábil dentro da meta — o dinheiro já saiu do caixa no aporte, então não
+// deve contar de novo no saldo de caixa nem em nenhum total "real".
+const ORIGENS_NAO_CAIXA = ["meta_compra"];
+const ORIGENS_NAO_REAIS = ["meta_aporte", "meta_retirada", "meta_compra"];
+
 export default async function Home({ searchParams }) {
   const sp = await searchParams;
   const mesYYYYMM = sp.mes || new Date().toISOString().slice(0, 7);
@@ -54,8 +60,8 @@ export default async function Home({ searchParams }) {
     }
   }
 
-  const entradasReais = entradas.filter(e => e.origem !== "meta_retirada");
-  const saidasReais = saidas.filter(s => s.origem !== "meta_aporte");
+  const entradasReais = entradas.filter(e => !ORIGENS_NAO_REAIS.includes(e.origem));
+  const saidasReais = saidas.filter(s => !ORIGENS_NAO_REAIS.includes(s.origem));
 
   const totalEntradasReais = entradasReais.reduce((s, e) => s + Number(e.valor), 0);
   const totalSaidasReais = saidasReais.reduce((s, e) => s + Number(e.valor), 0);
@@ -63,9 +69,11 @@ export default async function Home({ searchParams }) {
   const totalAportado = saidas.filter(s => s.origem === "meta_aporte").reduce((s, e) => s + Number(e.valor), 0);
   const totalRetirado = entradas.filter(e => e.origem === "meta_retirada").reduce((s, e) => s + Number(e.valor), 0);
 
-  // saldo do mês (isolado, só o que já foi confirmado/registrado de verdade)
-  const totalEntradas = entradas.reduce((s, e) => s + Number(e.valor), 0);
-  const totalSaidas = saidas.reduce((s, e) => s + Number(e.valor), 0);
+  // saldo do mês (isolado, só o que já foi confirmado/registrado de verdade;
+  // exclui meta_compra pra não descontar do caixa uma 2ª vez — o dinheiro já
+  // saiu do caixa no aporte, marcar como comprado só move dentro da meta)
+  const totalEntradas = entradas.filter(e => !ORIGENS_NAO_CAIXA.includes(e.origem)).reduce((s, e) => s + Number(e.valor), 0);
+  const totalSaidas = saidas.filter(s => !ORIGENS_NAO_CAIXA.includes(s.origem)).reduce((s, e) => s + Number(e.valor), 0);
   const saldoDoMes = totalEntradas - totalSaidas;
 
   // saldo acumulado: soma o saldo de todos os meses anteriores (já fechados) + o saldo deste mês
@@ -73,8 +81,8 @@ export default async function Home({ searchParams }) {
   if (mesInfo) {
     const { meses: mesesAnteriores } = await nhostQuery(SALDO_ANTES_DE, { antes: mesData });
     saldoAnterior = mesesAnteriores.reduce((acc, m) => {
-      const ent = m.transacoes_mes.filter(t => t.tipo === "entrada").reduce((s, t) => s + Number(t.valor), 0);
-      const sai = m.transacoes_mes.filter(t => t.tipo === "saida").reduce((s, t) => s + Number(t.valor), 0);
+      const ent = m.transacoes_mes.filter(t => t.tipo === "entrada" && !ORIGENS_NAO_CAIXA.includes(t.origem)).reduce((s, t) => s + Number(t.valor), 0);
+      const sai = m.transacoes_mes.filter(t => t.tipo === "saida" && !ORIGENS_NAO_CAIXA.includes(t.origem)).reduce((s, t) => s + Number(t.valor), 0);
       return acc + (ent - sai);
     }, 0);
   }
@@ -90,10 +98,10 @@ export default async function Home({ searchParams }) {
 
     const porMes = mesesRange.map(m => {
       const ent = m.transacoes_mes
-        .filter(t => t.tipo === "entrada" && t.origem !== "meta_retirada")
+        .filter(t => t.tipo === "entrada" && !ORIGENS_NAO_REAIS.includes(t.origem))
         .reduce((s, t) => s + Number(t.valor), 0);
       const sai = m.transacoes_mes
-        .filter(t => t.tipo === "saida" && t.origem !== "meta_aporte")
+        .filter(t => t.tipo === "saida" && !ORIGENS_NAO_REAIS.includes(t.origem))
         .reduce((s, t) => s + Number(t.valor), 0);
       const itens = m.transacoes_mes.map(t => ({
         ...t,
@@ -151,6 +159,7 @@ export default async function Home({ searchParams }) {
               stamps={{
                 recorrente: { texto: "recorrente", teal: false },
                 meta_retirada: { texto: "meta", teal: true },
+                meta_compra: { texto: "meta", teal: true },
               }}
               deletavelOrigens={["avulso", "recorrente"]}
               mesFechado={mesInfo.fechado}
@@ -176,6 +185,7 @@ export default async function Home({ searchParams }) {
               stamps={{
                 custo_fixo: { texto: "fixo", teal: false },
                 meta_aporte: { texto: "meta", teal: true },
+                meta_compra: { texto: "meta", teal: true },
                 parcelamento: { texto: "parcela", teal: false },
               }}
               deletavelOrigens={["avulso", "custo_fixo"]}
