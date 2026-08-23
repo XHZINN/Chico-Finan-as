@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -28,34 +29,70 @@ function TooltipCard({ active, payload, label }) {
   );
 }
 
-function PizzaPorCategoria({ dados, vazioTexto }) {
+function DetalheCategoria({ categoria, tipo, itensDoMes, onFechar }) {
+  const itens = itensDoMes.filter(t => t.tipo === tipo && t.categoria === categoria);
+  const total = itens.reduce((s, t) => s + t.valor, 0);
+  return (
+    <div className="goal-card" style={{ marginTop: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <strong>{categoria} <small style={{ color: "var(--ink-soft)", fontWeight: 400 }}>({tipo === "entrada" ? "entrada" : "saída"})</small></strong>
+        <button className="goal-remove" onClick={onFechar} type="button">fechar ×</button>
+      </div>
+      <div className="goal-nums">{itens.length} lançamento{itens.length === 1 ? "" : "s"} · total {fmt(total)}</div>
+      {itens.length === 0 && <div className="empty">Nada aqui.</div>}
+      {itens.map((t, i) => (
+        <div className="item-row" key={i}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--ink-soft)", minWidth: 40 }}>{t.data}</span>
+          <span className="name">{t.nome}</span>
+          <span className="value">{fmt(t.valor)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PizzaPorCategoria({ dados, vazioTexto, tipo, itensDoMes, categoriaSelecionada, onSelecionar }) {
   const total = dados.reduce((s, c) => s + c.valor, 0);
   if (dados.length === 0) {
     return <div className="empty">{vazioTexto}</div>;
   }
+  const clique = (data) => onSelecionar(tipo, data?.nome || data?.value);
   return (
-    <div style={{ width: "100%", height: 320 }}>
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={dados}
-            dataKey="valor"
-            nameKey="nome"
-            innerRadius={60}
-            outerRadius={110}
-            paddingAngle={2}
-            label={({ nome, valor }) => `${nome} ${Math.round((valor / total) * 100)}%`}
-            labelLine={false}
-          >
-            {dados.map((c, i) => (
-              <Cell key={i} fill={c.cor} stroke="var(--paper)" strokeWidth={2} />
-            ))}
-          </Pie>
-          <Tooltip content={<TooltipCard />} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
+    <>
+      <div style={{ width: "100%", height: 320 }}>
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={dados}
+              dataKey="valor"
+              nameKey="nome"
+              innerRadius={60}
+              outerRadius={110}
+              paddingAngle={2}
+              label={({ nome, valor }) => `${nome} ${Math.round((valor / total) * 100)}%`}
+              labelLine={false}
+              onClick={clique}
+              style={{ cursor: "pointer" }}
+            >
+              {dados.map((c, i) => (
+                <Cell key={i} fill={c.cor} stroke="var(--paper)" strokeWidth={2} />
+              ))}
+            </Pie>
+            <Tooltip content={<TooltipCard />} />
+            <Legend wrapperStyle={{ fontSize: 12, cursor: "pointer" }} onClick={clique} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="sub" style={{ margin: "-8px 0 0" }}>Clique numa fatia ou legenda pra ver os lançamentos.</p>
+      {categoriaSelecionada && categoriaSelecionada.tipo === tipo && (
+        <DetalheCategoria
+          categoria={categoriaSelecionada.nome}
+          tipo={tipo}
+          itensDoMes={itensDoMes}
+          onFechar={() => onSelecionar(tipo, null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -87,7 +124,18 @@ export default function RelatoriosGraficos({
   evolucaoMensal, categoriasEvolucao,
   evolucaoMensalEntrada, categoriasEvolucaoEntrada,
   entradasSaidasTempo, metasInvestimentos,
+  itensDoMes,
 }) {
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
+
+  function selecionar(tipo, nome) {
+    if (!nome || (categoriaSelecionada?.tipo === tipo && categoriaSelecionada?.nome === nome)) {
+      setCategoriaSelecionada(null);
+    } else {
+      setCategoriaSelecionada({ tipo, nome });
+    }
+  }
+
   return (
     <>
       <section>
@@ -97,7 +145,11 @@ export default function RelatoriosGraficos({
           <span className="month-label">{mesYYYYMM}</span>
           <a href={`/relatorios?mes=${mesSeguinte}`}>&rarr;</a>
         </div>
-        <PizzaPorCategoria dados={gastoPorCategoriaMes} vazioTexto="Nenhum gasto categorizado neste mês." />
+        <PizzaPorCategoria
+          dados={gastoPorCategoriaMes} vazioTexto="Nenhum gasto categorizado neste mês."
+          tipo="saida" itensDoMes={itensDoMes}
+          categoriaSelecionada={categoriaSelecionada} onSelecionar={selecionar}
+        />
       </section>
 
       <section>
@@ -107,7 +159,11 @@ export default function RelatoriosGraficos({
           <span className="month-label">{mesYYYYMM}</span>
           <a href={`/relatorios?mes=${mesSeguinte}`}>&rarr;</a>
         </div>
-        <PizzaPorCategoria dados={entradaPorCategoriaMes} vazioTexto="Nenhuma entrada categorizada neste mês." />
+        <PizzaPorCategoria
+          dados={entradaPorCategoriaMes} vazioTexto="Nenhuma entrada categorizada neste mês."
+          tipo="entrada" itensDoMes={itensDoMes}
+          categoriaSelecionada={categoriaSelecionada} onSelecionar={selecionar}
+        />
       </section>
 
       <section>

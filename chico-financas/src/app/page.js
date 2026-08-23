@@ -148,10 +148,10 @@ export default async function Home({ searchParams }) {
           <>
             <div className="receipt-row"><span className="label">Entradas reais</span><span>{fmt(totalEntradasReais)}</span></div>
             <div className="receipt-row"><span className="label">Saídas reais</span><span>{fmt(totalSaidasReais)}</span></div>
-            <div className="receipt-row"><span className="label">Guardado em metas</span><span>{fmt(totalAportado)}</span></div>
-            <div className="receipt-row"><span className="label">Retirado de metas</span><span>{fmt(totalRetirado)}</span></div>
-            <div className="receipt-row"><span className="label">Aplicado em investimentos</span><span>{fmt(totalAplicado)}</span></div>
-            <div className="receipt-row"><span className="label">Resgatado de investimentos</span><span>{fmt(totalResgatado)}</span></div>
+            {totalAportado > 0 && <div className="receipt-row"><span className="label">Guardado em metas</span><span>{fmt(totalAportado)}</span></div>}
+            {totalRetirado > 0 && <div className="receipt-row"><span className="label">Retirado de metas</span><span>{fmt(totalRetirado)}</span></div>}
+            {totalAplicado > 0 && <div className="receipt-row"><span className="label">Aplicado em investimentos</span><span>{fmt(totalAplicado)}</span></div>}
+            {totalResgatado > 0 && <div className="receipt-row"><span className="label">Resgatado de investimentos</span><span>{fmt(totalResgatado)}</span></div>}
             <div className="receipt-row total"><span className="label">Saldo de caixa</span><span>{fmt(saldo)}</span></div>
           </>
         )}
@@ -159,8 +159,11 @@ export default async function Home({ searchParams }) {
 
       {mesInfo && (
         <>
-          <section>
-            <h2>Entradas</h2>
+          <details className="dash-section">
+            <summary className="dash-summary">
+              <span>Entradas</span>
+              <span className="dash-summary-meta">{entradas.length} · {fmt(totalEntradasReais)}</span>
+            </summary>
             <ListaTransacoes
               items={entradas}
               stamps={{
@@ -184,10 +187,13 @@ export default async function Home({ searchParams }) {
                 <button type="submit">+</button>
               </form>
             )}
-          </section>
+          </details>
 
-          <section>
-            <h2>Saídas</h2>
+          <details className="dash-section">
+            <summary className="dash-summary">
+              <span>Saídas</span>
+              <span className="dash-summary-meta">{saidas.length} · {fmt(totalSaidasReais)}</span>
+            </summary>
             <ListaTransacoes
               items={saidas}
               stamps={{
@@ -212,10 +218,14 @@ export default async function Home({ searchParams }) {
                 <button type="submit">+</button>
               </form>
             )}
-          </section>
+          </details>
 
-          <section>
-            <h2>Parcelamentos <small>(a 1ª parcela só entra no mês seguinte)</small></h2>
+          <details className="dash-section">
+            <summary className="dash-summary">
+              <span>Parcelamentos</span>
+              <span className="dash-summary-meta">{parcelamentos.length}</span>
+            </summary>
+            <p className="sub" style={{ margin: "0 0 8px" }}>A 1ª parcela só entra no mês seguinte.</p>
             {parcelamentos.length === 0 && <div className="empty">Nenhum parcelamento ativo.</div>}
             {parcelamentos.map((p) => (
               <div className="item-row" key={p.id_parcelamento}>
@@ -236,11 +246,15 @@ export default async function Home({ searchParams }) {
                 <button type="submit">parcelar</button>
               </form>
             )}
-          </section>
+          </details>
 
           {!mesInfo.fechado && (recorrentesPendentes.length > 0 || custosPendentes.length > 0) && (
-            <section>
-              <h2>Pendentes <small>(ainda não confirmados neste mês)</small></h2>
+            <details className="dash-section">
+              <summary className="dash-summary">
+                <span>Pendentes</span>
+                <span className="dash-summary-meta">{recorrentesPendentes.length + custosPendentes.length}</span>
+              </summary>
+              <p className="sub" style={{ margin: "0 0 8px" }}>Ainda não confirmados neste mês.</p>
               {recorrentesPendentes.map((r) => (
                 <div className="item-row" key={r.id_recorrente}>
                   <span className="stamp ok" style={{opacity: 0.6}}>recorrente</span>
@@ -269,7 +283,7 @@ export default async function Home({ searchParams }) {
                   </form>
                 </div>
               ))}
-            </section>
+            </details>
           )}
         </>
       )}

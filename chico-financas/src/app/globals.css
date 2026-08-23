@@ -124,6 +124,22 @@ summary.ver-mais{
 summary.ver-mais::before{content:"▸ ";font-size:10px;}
 details[open]>summary.ver-mais::before{content:"▾ ";}
 
+.dash-section{
+  background:var(--paper-2);border:1px solid var(--line);border-radius:6px;
+  padding:2px 16px;margin-bottom:12px;
+}
+.dash-section[open]{padding-bottom:14px;}
+.dash-summary{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 0;font-family:'Fraunces',serif;font-weight:600;font-size:15px;
+}
+.dash-summary::before{content:"▸";color:var(--ink-soft);font-size:12px;margin-right:2px;}
+details[open]>.dash-summary::before{content:"▾";}
+.dash-summary-meta{
+  font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink-soft);
+}
+.dash-section .item-row:last-of-type{border-bottom:none;}
+
 .add-form{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 .add-form input{
   font-family:'IBM Plex Sans',sans-serif;

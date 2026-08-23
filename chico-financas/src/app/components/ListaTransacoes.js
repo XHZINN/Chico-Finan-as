@@ -1,4 +1,5 @@
-import { deletarAvulso, atualizarCategoriaTransacao } from "../actions";
+import { deletarAvulso } from "../actions";
+import CategoriaSelectAuto from "./CategoriaSelectAuto";
 
 const LIMITE = 8;
 
@@ -32,42 +33,27 @@ function Stamp({ origem, stamps }) {
     : <span className="stamp ok">{cfg.texto}</span>;
 }
 
-function SeletorCategoria({ item, categorias }) {
-  return (
-    <form action={atualizarCategoriaTransacao} style={{ display: "flex", gap: 4, alignItems: "center", padding: "0 0 8px 0" }}>
-      <input type="hidden" name="id" value={item.id_transacao} />
-      <span style={{ fontSize: 11, color: "var(--ink-soft)" }}>categoria:</span>
-      <select
-        name="id_categoria"
-        defaultValue={item.id_categoria || ""}
-        style={{ fontSize: 12, padding: "2px 4px", border: "1px solid var(--line)", borderRadius: 4, background: "var(--paper-2)", color: "var(--ink)" }}
-      >
-        <option value="">Sem categoria</option>
-        {categorias.filter(c => c.tipo === item.tipo).map(c => (
-          <option key={c.id_categoria} value={c.id_categoria}>{c.nome}</option>
-        ))}
-      </select>
-      <button type="submit" className="btn-link" style={{ padding: "2px 8px", fontSize: 11, marginBottom: 0 }}>salvar</button>
-    </form>
-  );
-}
-
 function LinhaItem({ item, stamps, deletavelOrigens, mesFechado, categorias }) {
   const categorizavel = categorias && deletavelOrigens.includes(item.origem);
   return (
-    <div>
-      <div className="item-row">
-        <Stamp origem={item.origem} stamps={stamps} />
-        <span className="name">{item.nome}</span>
-        <span className="value">{fmt(item.valor)}</span>
-        {deletavelOrigens.includes(item.origem) && !mesFechado && (
-          <form action={deletarAvulso}>
-            <input type="hidden" name="id" value={item.id_transacao} />
-            <button className="del" type="submit">×</button>
-          </form>
-        )}
-      </div>
-      {categorizavel && <SeletorCategoria item={item} categorias={categorias} />}
+    <div className="item-row">
+      <Stamp origem={item.origem} stamps={stamps} />
+      <span className="name">{item.nome}</span>
+      {categorizavel && (
+        <CategoriaSelectAuto
+          id_transacao={item.id_transacao}
+          id_categoria={item.id_categoria}
+          categorias={categorias}
+          tipo={item.tipo}
+        />
+      )}
+      <span className="value">{fmt(item.valor)}</span>
+      {deletavelOrigens.includes(item.origem) && !mesFechado && (
+        <form action={deletarAvulso}>
+          <input type="hidden" name="id" value={item.id_transacao} />
+          <button className="del" type="submit">×</button>
+        </form>
+      )}
     </div>
   );
 }

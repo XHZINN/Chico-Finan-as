@@ -71,6 +71,17 @@ export default async function Relatorios({ searchParams }) {
   const gastoPorCategoriaMes = porCategoriaNoMes(mesAtualRow, "saida", corPorCategoria);
   const entradaPorCategoriaMes = porCategoriaNoMes(mesAtualRow, "entrada", corPorCategoria);
 
+  // lançamentos individuais do mês (reais), pra drill-down por categoria no clique
+  const itensDoMes = (mesAtualRow?.transacoes_mes || [])
+    .filter(t => ORIGENS_REAIS.includes(t.origem))
+    .map(t => ({
+      nome: t.nome,
+      valor: Number(t.valor),
+      tipo: t.tipo,
+      categoria: nomeCategoria(t),
+      data: t.criado_em ? new Date(t.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "",
+    }));
+
   const ultimosMeses = meses.slice(-6);
   const { evolucao: evolucaoMensal, categoriasUsadas: categoriasEvolucao } = evolucaoPorCategoria(ultimosMeses, "saida", corPorCategoria);
   const { evolucao: evolucaoMensalEntrada, categoriasUsadas: categoriasEvolucaoEntrada } = evolucaoPorCategoria(ultimosMeses, "entrada", corPorCategoria);
@@ -112,6 +123,7 @@ export default async function Relatorios({ searchParams }) {
         categoriasEvolucaoEntrada={categoriasEvolucaoEntrada}
         entradasSaidasTempo={entradasSaidasTempo}
         metasInvestimentos={metasInvestimentos}
+        itensDoMes={itensDoMes}
       />
     </div>
   );

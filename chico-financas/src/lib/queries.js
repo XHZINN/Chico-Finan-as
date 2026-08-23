@@ -33,7 +33,7 @@ export const TODOS_MESES_COM_TRANSACOES = `
       mes
       fechado
       transacoes_mes {
-        valor tipo origem id_categoria
+        nome valor tipo origem id_categoria criado_em
         categoria { nome }
       }
     }
