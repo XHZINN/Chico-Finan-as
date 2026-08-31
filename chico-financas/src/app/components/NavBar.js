@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { logout } from "../login/actions";
+import SubmitButton from "./SubmitButton";
 
 const LINKS = [
   { href: "/", label: "Painel" },
@@ -28,7 +29,7 @@ export default function NavBar() {
         );
       })}
       <form action={logout} style={{ marginLeft: "auto" }}>
-        <button type="submit" className="navbar-link" style={{ background: "none", border: "none", font: "inherit", cursor: "pointer" }}>sair</button>
+        <SubmitButton className="navbar-link" style={{ background: "none", border: "none", font: "inherit", cursor: "pointer" }}>sair</SubmitButton>
       </form>
     </nav>
   );

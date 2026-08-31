@@ -1,6 +1,7 @@
 import { nhostQuery } from "@/lib/nhost";
 import { META_COM_ITENS, MES_INFO } from "@/lib/queries";
 import { adicionarItemMeta, toggleItemComprado, editarItemMeta, comprarItemParcelado } from "../../actions";
+import SubmitButton from "../../components/SubmitButton";
 
 function fmt(n) { return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 }); }
 
@@ -56,7 +57,7 @@ export default async function MetaDetalhe({ params, searchParams }) {
                 <input type="hidden" name="id_meta" value={meta.id_meta} />
                 <input className="name" name="nome" defaultValue={item.nome} required />
                 <input className="value" name="valor_planejado" type="number" step="0.01" defaultValue={item.valor_planejado} required />
-                <button type="submit">salvar</button>
+                <SubmitButton>salvar</SubmitButton>
                 <a href={`/metas/${meta.id_meta}`} className="btn-link">cancelar</a>
               </form>
             ) : (
@@ -77,7 +78,7 @@ export default async function MetaDetalhe({ params, searchParams }) {
                     <input type="hidden" name="comprado" value={item.comprado} />
                     <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
                     <input type="hidden" name="mes" value={mesYYYYMM} />
-                    <button type="submit">{item.comprado ? "desmarcar" : "comprado"}</button>
+                    <SubmitButton>{item.comprado ? "desmarcar" : "comprado"}</SubmitButton>
                   </form>
                 )}
 
@@ -89,7 +90,7 @@ export default async function MetaDetalhe({ params, searchParams }) {
                     <input type="hidden" name="valor_total" value={item.valor_planejado} />
                     <input type="hidden" name="mes" value={mesYYYYMM} />
                     <input name="qtd_parcelas" type="number" placeholder="parcelas" style={{width: 70}} required />
-                    <button type="submit">parcelar</button>
+                    <SubmitButton>parcelar</SubmitButton>
                   </form>
                 )}
 
@@ -116,7 +117,7 @@ export default async function MetaDetalhe({ params, searchParams }) {
           <input type="hidden" name="mes" value={mesYYYYMM} />
           <input className="name" name="nome" placeholder="Nome da peça" required />
           <input className="value" name="valor_planejado" placeholder="Valor" type="number" step="0.01" required />
-          <button type="submit">+</button>
+          <SubmitButton>+</SubmitButton>
         </form>
       </section>
     </div>

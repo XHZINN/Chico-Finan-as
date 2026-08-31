@@ -1,6 +1,7 @@
 import Toast from "../Toast";
 import { caminhoSeguro } from "@/lib/session";
 import { login } from "./actions";
+import SubmitButton from "../components/SubmitButton";
 
 export default async function Login({ searchParams }) {
   const sp = await searchParams;
@@ -17,7 +18,7 @@ export default async function Login({ searchParams }) {
         <form action={login} className="add-form" style={{ flexDirection: "column", alignItems: "stretch" }}>
           <input type="hidden" name="next" value={next} />
           <input className="name" name="senha" type="password" placeholder="Senha" autoFocus required />
-          <button type="submit">Entrar</button>
+          <SubmitButton>Entrar</SubmitButton>
         </form>
       </div>
     </div>

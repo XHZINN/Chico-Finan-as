@@ -1,5 +1,6 @@
 import Toast from "./Toast";
 import ListaTransacoes from "./components/ListaTransacoes";
+import SubmitButton from "./components/SubmitButton";
 import { nhostQuery } from "@/lib/nhost";
 import {
   MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE, CATEGORIAS_COM_PALAVRAS,
@@ -188,7 +189,7 @@ export default async function Home({ searchParams }) {
                 <input type="hidden" name="mes" value={mesYYYYMM} />
                 <input className="name" name="nome" placeholder="Entrada avulsa" required />
                 <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-                <button type="submit">+</button>
+                <SubmitButton>+</SubmitButton>
               </form>
             )}
           </details>
@@ -219,7 +220,7 @@ export default async function Home({ searchParams }) {
                 <input type="hidden" name="mes" value={mesYYYYMM} />
                 <input className="name" name="nome" placeholder="Saída avulsa" required />
                 <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-                <button type="submit">+</button>
+                <SubmitButton>+</SubmitButton>
               </form>
             )}
           </details>
@@ -232,33 +233,44 @@ export default async function Home({ searchParams }) {
             <p className="sub" style={{ margin: "0 0 8px" }}>A 1ª parcela só entra no mês seguinte.</p>
             {parcelamentos.length === 0 && <div className="empty">Nenhum parcelamento ativo.</div>}
             {parcelamentos.map((p) => (
-              <div className="item-row" key={p.id_parcelamento}>
-                {editandoParcelamento === p.id_parcelamento ? (
-                  <form action={editarParcelamento} className="add-form" style={{ flex: 1 }}>
+              editandoParcelamento === p.id_parcelamento ? (
+                <div className="edit-card" key={p.id_parcelamento}>
+                  <form action={editarParcelamento} className="edit-grid">
                     <input type="hidden" name="id" value={p.id_parcelamento} />
                     <input type="hidden" name="parcelas_pagas" value={p.parcelas_pagas} />
                     <input type="hidden" name="mes" value={mesYYYYMM} />
-                    <input className="name" name="descricao" defaultValue={p.descricao} required />
-                    <input className="value" name="valor_parcela" placeholder="Valor da parcela" type="number" step="0.01" defaultValue={p.valor_parcela} required />
-                    <input name="qtd_parcelas" type="number" placeholder="parcelas" defaultValue={p.qtd_parcelas} min={p.parcelas_pagas + 1} style={{ width: 80 }} required />
-                    <button type="submit">salvar</button>
-                    <a href={`/?mes=${mesYYYYMM}`} className="btn-link">cancelar</a>
+                    <label className="field field-wide">
+                      <span>Descrição</span>
+                      <input name="descricao" defaultValue={p.descricao} required />
+                    </label>
+                    <label className="field">
+                      <span>Valor da parcela</span>
+                      <input name="valor_parcela" type="number" step="0.01" defaultValue={p.valor_parcela} required />
+                    </label>
+                    <label className="field">
+                      <span>Parcelas</span>
+                      <input name="qtd_parcelas" type="number" defaultValue={p.qtd_parcelas} min={p.parcelas_pagas + 1} required />
+                    </label>
+                    <div className="edit-actions">
+                      <a href={`/?mes=${mesYYYYMM}`} className="btn-link">cancelar</a>
+                      <SubmitButton className="btn-link primary">salvar</SubmitButton>
+                    </div>
                   </form>
-                ) : (
-                  <>
-                    <span className="name">{p.descricao}</span>
-                    <span style={{ fontSize: 12, color: "var(--ink-soft)", marginRight: 8 }}>
-                      {p.parcelas_pagas}/{p.qtd_parcelas} · próxima {p.proximo_mes?.slice(0, 7)}
-                    </span>
-                    <span className="value">{fmt(p.valor_parcela)}</span>
+                </div>
+              ) : (
+                <div className="parcel-row" key={p.id_parcelamento}>
+                  <span className="name">{p.descricao}</span>
+                  <span className="meta">{p.parcelas_pagas}/{p.qtd_parcelas} · próxima {p.proximo_mes?.slice(0, 7)}</span>
+                  <span className="value">{fmt(p.valor_parcela)}</span>
+                  <div className="row-actions">
                     <a href={`/?mes=${mesYYYYMM}&editarParcelamento=${p.id_parcelamento}`} className="btn-link">editar</a>
                     <form action={excluirParcelamento}>
                       <input type="hidden" name="id" value={p.id_parcelamento} />
-                      <button className="del" type="submit">×</button>
+                      <SubmitButton className="del" title="excluir parcelamento">×</SubmitButton>
                     </form>
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              )
             ))}
             {!mesInfo.fechado && (
               <form action={comprarAvulsoParcelado} className="add-form">
@@ -267,7 +279,7 @@ export default async function Home({ searchParams }) {
                 <input className="value" name="valor_total" placeholder="Valor total" type="number" step="0.01" />
                 <input className="value" name="valor_parcela" placeholder="ou valor da parcela" type="number" step="0.01" />
                 <input name="qtd_parcelas" type="number" placeholder="parcelas" style={{ width: 80 }} required />
-                <button type="submit">parcelar</button>
+                <SubmitButton>parcelar</SubmitButton>
               </form>
             )}
           </details>
@@ -289,7 +301,7 @@ export default async function Home({ searchParams }) {
                     <input type="hidden" name="mes" value={mesYYYYMM} />
                     <input type="hidden" name="nome" value={r.nome} />
                     <input type="hidden" name="valor" value={r.valor} />
-                    <button className="btn-link" type="submit">confirmar</button>
+                    <SubmitButton className="btn-link">confirmar</SubmitButton>
                   </form>
                 </div>
               ))}
@@ -303,7 +315,7 @@ export default async function Home({ searchParams }) {
                     <input type="hidden" name="mes" value={mesYYYYMM} />
                     <input type="hidden" name="nome" value={c.nome} />
                     <input type="hidden" name="valor" value={c.valor} />
-                    <button className="btn-link" type="submit">confirmar</button>
+                    <SubmitButton className="btn-link">confirmar</SubmitButton>
                   </form>
                 </div>
               ))}
@@ -319,7 +331,7 @@ export default async function Home({ searchParams }) {
           <input type="month" name="de" defaultValue={sp.de || ""} required />
           <span style={{ alignSelf: "center" }}>até</span>
           <input type="month" name="ate" defaultValue={sp.ate || ""} required />
-          <button type="submit">Ver extrato</button>
+          <SubmitButton>Ver extrato</SubmitButton>
         </form>
 
         {extrato && (

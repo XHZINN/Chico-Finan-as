@@ -4,6 +4,7 @@ import { CATEGORIAS_COM_PALAVRAS } from "@/lib/queries";
 import {
   criarCategoria, deletarCategoria, adicionarPalavra, removerPalavra, recategorizarTudo,
 } from "../actions";
+import SubmitButton from "../components/SubmitButton";
 
 function ListaCategorias({ categorias }) {
   return (
@@ -15,7 +16,7 @@ function ListaCategorias({ categorias }) {
             <strong>{c.nome}</strong>
             <form action={deletarCategoria}>
               <input type="hidden" name="id" value={c.id_categoria} />
-              <button className="goal-remove" type="submit">remover categoria</button>
+              <SubmitButton className="goal-remove">remover categoria</SubmitButton>
             </form>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 0" }}>
@@ -24,21 +25,20 @@ function ListaCategorias({ categorias }) {
               <form action={removerPalavra} key={p.palavra} style={{ display: "inline-flex" }}>
                 <input type="hidden" name="id_categoria" value={c.id_categoria} />
                 <input type="hidden" name="palavra" value={p.palavra} />
-                <button
-                  type="submit"
+                <SubmitButton
                   className="stamp ok"
                   style={{ border: "1px solid var(--gold)", cursor: "pointer" }}
                   title="remover palavra"
                 >
                   {p.palavra} ×
-                </button>
+                </SubmitButton>
               </form>
             ))}
           </div>
           <form action={adicionarPalavra} className="add-form">
             <input type="hidden" name="id_categoria" value={c.id_categoria} />
             <input className="name" name="palavra" placeholder="Nova palavra-chave" required />
-            <button type="submit">+</button>
+            <SubmitButton>+</SubmitButton>
           </form>
         </div>
       ))}
@@ -62,7 +62,7 @@ export default async function Categorias({ searchParams }) {
 
       <section>
         <form action={recategorizarTudo}>
-          <button type="submit" className="btn-link">categorizar lançamentos sem categoria</button>
+          <SubmitButton className="btn-link">categorizar lançamentos sem categoria</SubmitButton>
         </form>
       </section>
 
@@ -72,7 +72,7 @@ export default async function Categorias({ searchParams }) {
         <form action={criarCategoria} className="add-form">
           <input type="hidden" name="tipo" value="saida" />
           <input className="name" name="nome" placeholder="Nome da categoria" required />
-          <button type="submit">+ categoria de saída</button>
+          <SubmitButton>+ categoria de saída</SubmitButton>
         </form>
       </section>
 
@@ -82,7 +82,7 @@ export default async function Categorias({ searchParams }) {
         <form action={criarCategoria} className="add-form">
           <input type="hidden" name="tipo" value="entrada" />
           <input className="name" name="nome" placeholder="Nome da categoria" required />
-          <button type="submit">+ categoria de entrada</button>
+          <SubmitButton>+ categoria de entrada</SubmitButton>
         </form>
       </section>
     </div>

@@ -5,6 +5,7 @@ import {
   adicionarRecorrente, adicionarCustoFixo, toggleRecorrente, toggleCustoFixo,
   editarRecorrente, editarCustoFixo,
 } from "../actions";
+import SubmitButton from "../components/SubmitButton";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -27,34 +28,44 @@ export default async function Recorrentes({ searchParams }) {
         <h2>Recorrentes <small>(entradas fixas)</small></h2>
         {recorrentes.length === 0 && <div className="empty">Nenhum recorrente cadastrado.</div>}
         {recorrentes.map((r) => (
-          <div className="item-row" key={r.id_recorrente}>
-            {editando === r.id_recorrente ? (
-              <form action={editarRecorrente} className="add-form" style={{ flex: 1 }}>
+          editando === r.id_recorrente ? (
+            <div className="edit-card" key={r.id_recorrente}>
+              <form action={editarRecorrente} className="edit-grid">
                 <input type="hidden" name="id" value={r.id_recorrente} />
-                <input className="name" name="nome" defaultValue={r.nome} required />
-                <input className="value" name="valor" type="number" step="0.01" defaultValue={r.valor} required />
-                <button type="submit">salvar</button>
-                <a href="/recorrentes" className="btn-link">cancelar</a>
+                <label className="field field-wide">
+                  <span>Nome</span>
+                  <input name="nome" defaultValue={r.nome} required />
+                </label>
+                <label className="field">
+                  <span>Valor</span>
+                  <input name="valor" type="number" step="0.01" defaultValue={r.valor} required />
+                </label>
+                <div className="edit-actions">
+                  <a href="/recorrentes" className="btn-link">cancelar</a>
+                  <SubmitButton className="btn-link primary">salvar</SubmitButton>
+                </div>
               </form>
-            ) : (
-              <>
-                <span className="stamp ok" style={{ opacity: r.status ? 1 : 0.35 }}>{r.status ? "ativo" : "inativo"}</span>
-                <span className="name">{r.nome}</span>
-                <span className="value">{fmt(r.valor)}</span>
+            </div>
+          ) : (
+            <div className="list-row" key={r.id_recorrente}>
+              <span className="stamp ok" style={{ opacity: r.status ? 1 : 0.35 }}>{r.status ? "ativo" : "inativo"}</span>
+              <span className="name">{r.nome}</span>
+              <span className="value">{fmt(r.valor)}</span>
+              <div className="row-actions">
                 <a href={`/recorrentes?editar=${r.id_recorrente}`} className="btn-link">editar</a>
                 <form action={toggleRecorrente}>
                   <input type="hidden" name="id" value={r.id_recorrente} />
                   <input type="hidden" name="status" value={r.status} />
-                  <button className="del" type="submit">{r.status ? "desativar" : "ativar"}</button>
+                  <SubmitButton className="del">{r.status ? "desativar" : "ativar"}</SubmitButton>
                 </form>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )
         ))}
         <form action={adicionarRecorrente} className="add-form">
           <input className="name" name="nome" placeholder="Nome" required />
           <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-          <button type="submit">+</button>
+          <SubmitButton>+</SubmitButton>
         </form>
       </section>
 
@@ -62,34 +73,44 @@ export default async function Recorrentes({ searchParams }) {
         <h2>Custos fixos</h2>
         {custos_fixos.length === 0 && <div className="empty">Nenhum custo fixo cadastrado.</div>}
         {custos_fixos.map((c) => (
-          <div className="item-row" key={c.id_custo_fx}>
-            {editando === c.id_custo_fx ? (
-              <form action={editarCustoFixo} className="add-form" style={{ flex: 1 }}>
+          editando === c.id_custo_fx ? (
+            <div className="edit-card" key={c.id_custo_fx}>
+              <form action={editarCustoFixo} className="edit-grid">
                 <input type="hidden" name="id" value={c.id_custo_fx} />
-                <input className="name" name="nome" defaultValue={c.nome} required />
-                <input className="value" name="valor" type="number" step="0.01" defaultValue={c.valor} required />
-                <button type="submit">salvar</button>
-                <a href="/recorrentes" className="btn-link">cancelar</a>
+                <label className="field field-wide">
+                  <span>Nome</span>
+                  <input name="nome" defaultValue={c.nome} required />
+                </label>
+                <label className="field">
+                  <span>Valor</span>
+                  <input name="valor" type="number" step="0.01" defaultValue={c.valor} required />
+                </label>
+                <div className="edit-actions">
+                  <a href="/recorrentes" className="btn-link">cancelar</a>
+                  <SubmitButton className="btn-link primary">salvar</SubmitButton>
+                </div>
               </form>
-            ) : (
-              <>
-                <span className="stamp ok" style={{ opacity: c.status ? 1 : 0.35 }}>{c.status ? "ativo" : "inativo"}</span>
-                <span className="name">{c.nome}</span>
-                <span className="value">{fmt(c.valor)}</span>
+            </div>
+          ) : (
+            <div className="list-row" key={c.id_custo_fx}>
+              <span className="stamp ok" style={{ opacity: c.status ? 1 : 0.35 }}>{c.status ? "ativo" : "inativo"}</span>
+              <span className="name">{c.nome}</span>
+              <span className="value">{fmt(c.valor)}</span>
+              <div className="row-actions">
                 <a href={`/recorrentes?editar=${c.id_custo_fx}`} className="btn-link">editar</a>
                 <form action={toggleCustoFixo}>
                   <input type="hidden" name="id" value={c.id_custo_fx} />
                   <input type="hidden" name="status" value={c.status} />
-                  <button className="del" type="submit">{c.status ? "desativar" : "ativar"}</button>
+                  <SubmitButton className="del">{c.status ? "desativar" : "ativar"}</SubmitButton>
                 </form>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )
         ))}
         <form action={adicionarCustoFixo} className="add-form">
           <input className="name" name="nome" placeholder="Nome" required />
           <input className="value" name="valor" placeholder="Valor" type="number" step="0.01" required />
-          <button type="submit">+</button>
+          <SubmitButton>+</SubmitButton>
         </form>
       </section>
     </div>

@@ -2,6 +2,7 @@ import Toast from "../../Toast";
 import { nhostQuery } from "@/lib/nhost";
 import { INVESTIMENTO_BY_ID, TRANSACOES_INVESTIMENTO, MES_INFO } from "@/lib/queries";
 import { guardarNoInvestimento, retirarDoInvestimento, atualizarValorInvestimento, atualizarTaxaInvestimento } from "../../actions";
+import SubmitButton from "../../components/SubmitButton";
 
 function fmt(n) { return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 }); }
 
@@ -52,7 +53,7 @@ export default async function InvestimentoDetalhe({ params, searchParams }) {
             <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
             <input type="hidden" name="redirect_to" value={`/investimentos/${inv.id_investimento}`} />
             <input name="valor" type="number" step="0.01" placeholder="valor" required />
-            <button type="submit">guardar</button>
+            <SubmitButton>guardar</SubmitButton>
           </form>
           <form action={retirarDoInvestimento} style={{display: "flex", gap: 8}}>
             <input type="hidden" name="id" value={inv.id_investimento} />
@@ -60,7 +61,7 @@ export default async function InvestimentoDetalhe({ params, searchParams }) {
             <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
             <input type="hidden" name="redirect_to" value={`/investimentos/${inv.id_investimento}`} />
             <input name="valor" type="number" step="0.01" placeholder="valor" required />
-            <button type="submit">retirar</button>
+            <SubmitButton>retirar</SubmitButton>
           </form>
         </div>
       </section>
@@ -70,7 +71,7 @@ export default async function InvestimentoDetalhe({ params, searchParams }) {
         <form action={atualizarValorInvestimento} className="add-form">
           <input type="hidden" name="id" value={inv.id_investimento} />
           <input className="value" name="valor_atual" type="number" step="0.01" placeholder={`atual: ${inv.valor_atual}`} required />
-          <button type="submit">atualizar</button>
+          <SubmitButton>atualizar</SubmitButton>
         </form>
       </section>
 
@@ -80,7 +81,7 @@ export default async function InvestimentoDetalhe({ params, searchParams }) {
           <input type="hidden" name="id" value={inv.id_investimento} />
           <input name="percentual_cdi" type="number" step="0.01" placeholder="% do CDI" defaultValue={inv.percentual_cdi} style={{width: 100}} required />
           <input name="cdi_atual" type="number" step="0.01" placeholder="CDI a.a." defaultValue={inv.cdi_atual} style={{width: 100}} required />
-          <button type="submit">salvar</button>
+          <SubmitButton>salvar</SubmitButton>
         </form>
       </section>
 

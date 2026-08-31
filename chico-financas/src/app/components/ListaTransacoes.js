@@ -1,5 +1,6 @@
 import { deletarAvulso } from "../actions";
 import CategoriaSelectAuto from "./CategoriaSelectAuto";
+import SubmitButton from "./SubmitButton";
 
 const LIMITE = 8;
 
@@ -51,7 +52,7 @@ function LinhaItem({ item, stamps, deletavelOrigens, mesFechado, categorias }) {
       {deletavelOrigens.includes(item.origem) && !mesFechado && (
         <form action={deletarAvulso}>
           <input type="hidden" name="id" value={item.id_transacao} />
-          <button className="del" type="submit">×</button>
+          <SubmitButton className="del">×</SubmitButton>
         </form>
       )}
     </div>

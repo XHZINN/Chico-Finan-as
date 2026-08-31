@@ -2,6 +2,7 @@ import Toast from "../Toast";
 import { nhostQuery } from "@/lib/nhost";
 import { INVESTIMENTOS, MES_INFO } from "@/lib/queries";
 import { adicionarInvestimento, guardarNoInvestimento, retirarDoInvestimento } from "../actions";
+import SubmitButton from "../components/SubmitButton";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -38,7 +39,7 @@ export default async function Investimentos({ searchParams }) {
                 <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
                 <input type="hidden" name="redirect_to" value="/investimentos" />
                 <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                <button type="submit">guardar</button>
+                <SubmitButton>guardar</SubmitButton>
               </form>
               <form action={retirarDoInvestimento} style={{ display: "flex", gap: 8 }}>
                 <input type="hidden" name="id" value={inv.id_investimento} />
@@ -46,7 +47,7 @@ export default async function Investimentos({ searchParams }) {
                 <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
                 <input type="hidden" name="redirect_to" value="/investimentos" />
                 <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                <button type="submit">retirar</button>
+                <SubmitButton>retirar</SubmitButton>
               </form>
             </div>
             <a href={`/investimentos/${inv.id_investimento}`} className="btn-link primary">ver detalhes →</a>
@@ -61,7 +62,7 @@ export default async function Investimentos({ searchParams }) {
           <input className="name" name="nome" placeholder="Nome" required />
           <input className="name" name="tipo" placeholder="Tipo (ex: CDB, Tesouro)" required style={{ maxWidth: 160 }} />
           <input className="value" name="valor" placeholder="Valor aplicado" type="number" step="0.01" required />
-          <button type="submit">+</button>
+          <SubmitButton>+</SubmitButton>
         </form>
       </section>
     </div>

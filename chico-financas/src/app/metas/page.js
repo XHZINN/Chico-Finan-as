@@ -2,6 +2,7 @@ import Toast from "../Toast";
 import { nhostQuery } from "@/lib/nhost";
 import { METAS, MES_INFO } from "@/lib/queries";
 import { adicionarMeta, guardarNaMeta, retirarDaMeta, deletarMeta } from "../actions";
+import SubmitButton from "../components/SubmitButton";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -42,18 +43,18 @@ export default async function Metas({ searchParams }) {
                   <input type="hidden" name="nome_meta" value={g.nome} />
                   <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
                   <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                  <button type="submit">guardar</button>
+                  <SubmitButton>guardar</SubmitButton>
                 </form>
                 <form action={retirarDaMeta} style={{ display: "flex", gap: 8 }}>
                   <input type="hidden" name="id" value={g.id_meta} />
                   <input type="hidden" name="nome_meta" value={g.nome} />
                   <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
                   <input name="valor" type="number" step="0.01" placeholder="valor" required />
-                  <button type="submit">retirar</button>
+                  <SubmitButton>retirar</SubmitButton>
                 </form>
                 <form action={deletarMeta}>
                   <input type="hidden" name="id" value={g.id_meta} />
-                  <button className="goal-remove" type="submit">remover</button>
+                  <SubmitButton className="goal-remove">remover</SubmitButton>
                 </form>
               </div>
               <a href={`/metas/${g.id_meta}`} className="btn-link primary">ver itens →</a>
@@ -63,7 +64,7 @@ export default async function Metas({ searchParams }) {
         <form action={adicionarMeta} className="add-form">
           <input className="name" name="nome" placeholder="Nome da meta" required />
           <input className="value" name="meta" placeholder="Valor alvo" type="number" step="0.01" required />
-          <button type="submit">+</button>
+          <SubmitButton>+</SubmitButton>
         </form>
       </section>
     </div>
