@@ -9,6 +9,7 @@ import {
   INSERIR_TRANSACAO_META, INSERIR_META, GUARDAR_NA_META,
   DELETAR_META, DELETAR_AVULSO, EDITAR_ITEM_META, INSERIR_ITEM_META,
   META_COM_ITENS, TOGGLE_ITEM_COMPRADO, INSERIR_PARCELAMENTO, VINCULAR_PARCELAMENTO_ITEM,
+  EDITAR_PARCELAMENTO, DELETAR_PARCELAMENTO, DESVINCULAR_ITENS_PARCELAMENTO,
   INVESTIMENTO_BY_ID, GUARDAR_NO_INVESTIMENTO, SET_VALOR_INVESTIMENTO,
   ATUALIZAR_TAXA_INVESTIMENTO, INSERIR_TRANSACAO_INVESTIMENTO, INSERIR_INVESTIMENTO,
   CATEGORIAS_COM_PALAVRAS, INSERIR_CATEGORIA, DELETAR_CATEGORIA, ADICIONAR_PALAVRA, REMOVER_PALAVRA,
@@ -325,6 +326,33 @@ export async function comprarAvulsoParcelado(formData) {
 
   // nenhuma parcela é cobrada agora — a 1ª parcela só entra no mês seguinte
   revalidatePath("/");
+}
+
+export async function editarParcelamento(formData) {
+  const id = formData.get("id");
+  const descricao = formData.get("descricao");
+  const qtd_parcelas = parseInt(formData.get("qtd_parcelas"));
+  const parcelas_pagas = parseInt(formData.get("parcelas_pagas"));
+  const mes = formData.get("mes");
+
+  const valor_parcela = resolverValorParcela(formData, qtd_parcelas);
+
+  if (!descricao || !valorValido(valor_parcela) || !Number.isInteger(qtd_parcelas) || qtd_parcelas <= parcelas_pagas) {
+    redirect(`/?mes=${mes}&erro=valor_invalido`);
+  }
+
+  await nhostQuery(EDITAR_PARCELAMENTO, { id, descricao, valor_parcela, qtd_parcelas });
+  revalidatePath("/");
+  redirect(`/?mes=${mes}`);
+}
+
+export async function excluirParcelamento(formData) {
+  const id = formData.get("id");
+
+  await nhostQuery(DESVINCULAR_ITENS_PARCELAMENTO, { id });
+  await nhostQuery(DELETAR_PARCELAMENTO, { id });
+  revalidatePath("/");
+  revalidatePath("/metas");
 }
 
 export async function adicionarInvestimento(formData) {

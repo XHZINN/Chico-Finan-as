@@ -225,6 +225,20 @@ export const PARCELAMENTOS_ATIVOS = `
   }
 `;
 
+export const EDITAR_PARCELAMENTO = `
+  mutation EditarParcelamento($id: uuid!, $descricao: String!, $valor_parcela: numeric!, $qtd_parcelas: Int!) {
+    update_parcelamentos_by_pk(pk_columns: { id_parcelamento: $id }, _set: { descricao: $descricao, valor_parcela: $valor_parcela, qtd_parcelas: $qtd_parcelas }) { id_parcelamento }
+  }
+`;
+
+export const DESVINCULAR_ITENS_PARCELAMENTO = `
+  mutation DesvincularItensParcelamento($id: uuid!) {
+    update_meta_itens(where: { id_parcelamento: { _eq: $id } }, _set: { id_parcelamento: null }) { affected_rows }
+  }
+`;
+
+export const DELETAR_PARCELAMENTO = `mutation($id: uuid!) { delete_parcelamentos_by_pk(id_parcelamento: $id) { id_parcelamento } }`;
+
 export const INSERIR_INVESTIMENTO = `
   mutation InserirInvestimento($nome: String!, $tipo: String!, $valor_investido: numeric!) {
     insert_investimentos_one(object: {
