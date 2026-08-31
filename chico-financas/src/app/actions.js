@@ -343,7 +343,6 @@ export async function editarParcelamento(formData) {
 
   await nhostQuery(EDITAR_PARCELAMENTO, { id, descricao, valor_parcela, qtd_parcelas });
   revalidatePath("/");
-  redirect(`/?mes=${mes}`);
 }
 
 export async function excluirParcelamento(formData) {
