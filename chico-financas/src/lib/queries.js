@@ -144,7 +144,7 @@ export const SALDO_ANTES_DE = `
   query SaldoAntesDe($antes: date!) {
     meses(where: { mes: { _lt: $antes } }, order_by: { mes: asc }) {
       mes
-      transacoes_mes { valor tipo }
+      transacoes_mes { valor tipo origem }
     }
   }
 `;
