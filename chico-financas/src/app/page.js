@@ -208,6 +208,7 @@ export default async function Home({ searchParams }) {
                 parcelamento: { texto: "parcela", teal: false },
               }}
               deletavelOrigens={["avulso", "custo_fixo"]}
+              categorizavelOrigens={["avulso", "custo_fixo", "parcelamento"]}
               mesFechado={mesInfo.fechado}
               vazioTexto="Nenhuma saída neste mês."
               categorias={categorias}

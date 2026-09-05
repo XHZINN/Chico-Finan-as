@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { nhostQuery } from "@/lib/nhost";
 import { comparacaoSegura } from "@/lib/session";
+import { categorizar } from "@/lib/categorizacao";
+
+const CATEGORIAS_SAIDA = `
+  query CategoriasSaida {
+    categorias(where: { tipo: { _eq: "saida" } }, order_by: { criado_em: asc }) {
+      id_categoria
+      palavras(order_by: { palavra: asc }) { palavra }
+    }
+  }
+`;
 
 const PROXIMO_MES_ABERTO = `
   query ProximoMesAberto {
@@ -35,8 +45,8 @@ const PARCELAMENTOS_DO_MES = `
 `;
 
 const INSERIR_PARCELA = `
-  mutation InserirParcela($id_mes: uuid!, $nome: String!, $valor: numeric!) {
-    insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: "saida", origem: "parcelamento" }) { id_transacao }
+  mutation InserirParcela($id_mes: uuid!, $nome: String!, $valor: numeric!, $id_categoria: uuid) {
+    insert_transacoes_mes_one(object: { id_mes: $id_mes, nome: $nome, valor: $valor, tipo: "saida", origem: "parcelamento", id_categoria: $id_categoria }) { id_transacao }
   }
 `;
 
@@ -61,6 +71,7 @@ function proximoMes(dataStr) {
 async function fecharMesesAtrasados() {
   const mesRealAtual = new Date().toISOString().slice(0, 7) + "-01";
   const mesesFechados = [];
+  const { categorias: categoriasSaida } = await nhostQuery(CATEGORIAS_SAIDA);
 
   while (true) {
     const { meses } = await nhostQuery(PROXIMO_MES_ABERTO);
@@ -82,10 +93,12 @@ async function fecharMesesAtrasados() {
 
     for (const p of parcelamentos) {
       const novaContagem = p.parcelas_pagas + 1;
+      const id_categoria = categorizar(p.descricao, categoriasSaida);
       await nhostQuery(INSERIR_PARCELA, {
         id_mes: id_mes_novo,
         nome: `Parcela ${novaContagem}/${p.qtd_parcelas}: ${p.descricao}`,
         valor: p.valor_parcela,
+        id_categoria,
       });
 
       const finalizado = novaContagem >= p.qtd_parcelas;

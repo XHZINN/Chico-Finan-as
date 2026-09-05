@@ -34,8 +34,8 @@ function Stamp({ origem, stamps }) {
     : <span className="stamp ok">{cfg.texto}</span>;
 }
 
-function LinhaItem({ item, stamps, deletavelOrigens, mesFechado, categorias }) {
-  const categorizavel = categorias && deletavelOrigens.includes(item.origem);
+function LinhaItem({ item, stamps, deletavelOrigens, categorizavelOrigens, mesFechado, categorias }) {
+  const categorizavel = categorias && categorizavelOrigens.includes(item.origem);
   return (
     <div className="item-row">
       <Stamp origem={item.origem} stamps={stamps} />
@@ -59,9 +59,9 @@ function LinhaItem({ item, stamps, deletavelOrigens, mesFechado, categorias }) {
   );
 }
 
-function LinhaGrupo({ grupo, stamps, deletavelOrigens, mesFechado, categorias }) {
+function LinhaGrupo({ grupo, stamps, deletavelOrigens, categorizavelOrigens, mesFechado, categorias }) {
   if (grupo.itens.length === 1) {
-    return <LinhaItem item={grupo.itens[0]} stamps={stamps} deletavelOrigens={deletavelOrigens} mesFechado={mesFechado} categorias={categorias} />;
+    return <LinhaItem item={grupo.itens[0]} stamps={stamps} deletavelOrigens={deletavelOrigens} categorizavelOrigens={categorizavelOrigens} mesFechado={mesFechado} categorias={categorias} />;
   }
   return (
     <details>
@@ -72,18 +72,19 @@ function LinhaGrupo({ grupo, stamps, deletavelOrigens, mesFechado, categorias })
       </summary>
       <div className="group-items">
         {grupo.itens.map(item => (
-          <LinhaItem key={item.id_transacao} item={item} stamps={stamps} deletavelOrigens={deletavelOrigens} mesFechado={mesFechado} categorias={categorias} />
+          <LinhaItem key={item.id_transacao} item={item} stamps={stamps} deletavelOrigens={deletavelOrigens} categorizavelOrigens={categorizavelOrigens} mesFechado={mesFechado} categorias={categorias} />
         ))}
       </div>
     </details>
   );
 }
 
-export default function ListaTransacoes({ items, stamps, deletavelOrigens, mesFechado, vazioTexto, categorias }) {
+export default function ListaTransacoes({ items, stamps, deletavelOrigens, categorizavelOrigens, mesFechado, vazioTexto, categorias }) {
   if (items.length === 0) {
     return <div className="empty">{vazioTexto}</div>;
   }
 
+  const categorizavel = categorizavelOrigens || deletavelOrigens;
   const grupos = agruparPorNome(items);
   const visiveis = grupos.slice(0, LIMITE);
   const restantes = grupos.slice(LIMITE);
@@ -91,13 +92,13 @@ export default function ListaTransacoes({ items, stamps, deletavelOrigens, mesFe
   return (
     <>
       {visiveis.map((grupo) => (
-        <LinhaGrupo key={grupo.itens[0].id_transacao} grupo={grupo} stamps={stamps} deletavelOrigens={deletavelOrigens} mesFechado={mesFechado} categorias={categorias} />
+        <LinhaGrupo key={grupo.itens[0].id_transacao} grupo={grupo} stamps={stamps} deletavelOrigens={deletavelOrigens} categorizavelOrigens={categorizavel} mesFechado={mesFechado} categorias={categorias} />
       ))}
       {restantes.length > 0 && (
         <details>
           <summary className="ver-mais">ver mais ({restantes.length})</summary>
           {restantes.map((grupo) => (
-            <LinhaGrupo key={grupo.itens[0].id_transacao} grupo={grupo} stamps={stamps} deletavelOrigens={deletavelOrigens} mesFechado={mesFechado} categorias={categorias} />
+            <LinhaGrupo key={grupo.itens[0].id_transacao} grupo={grupo} stamps={stamps} deletavelOrigens={deletavelOrigens} categorizavelOrigens={categorizavel} mesFechado={mesFechado} categorias={categorias} />
           ))}
         </details>
       )}
