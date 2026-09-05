@@ -101,11 +101,11 @@ h2{
 }
 
 .item-row{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:10px;row-gap:4px;flex-wrap:wrap;
   padding:9px 0;border-bottom:1px solid var(--line);
   font-size:14px;
 }
-.item-row .name{flex:1;}
+.item-row .name{flex:1;min-width:0;}
 .item-row .value{font-family:'IBM Plex Mono',monospace;min-width:90px;text-align:right;}
 .item-row .del{
   background:none;border:none;color:var(--rust);cursor:pointer;font-size:16px;
