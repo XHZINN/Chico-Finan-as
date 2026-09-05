@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/investimentos", label: "Investimentos" },
   { href: "/categorias", label: "Categorias" },
   { href: "/relatorios", label: "Relatórios" },
+  { href: "/importar", label: "Importar" },
 ];
 
 export default function NavBar() {

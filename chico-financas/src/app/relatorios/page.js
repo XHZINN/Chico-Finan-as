@@ -4,7 +4,7 @@ import RelatoriosGraficos from "./RelatoriosGraficos";
 
 const CORES_CATEGORIA = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 const COR_SEM_CATEGORIA = "#898781";
-const ORIGENS_REAIS = ["avulso", "recorrente", "custo_fixo", "parcelamento"];
+const ORIGENS_REAIS = ["avulso", "recorrente", "custo_fixo", "parcelamento", "mercado_pago"];
 // meta_compra é lançamento contábil interno da meta — o dinheiro já saiu do
 // caixa no aporte, não deve contar de novo aqui
 const ORIGENS_NAO_REAIS_FLUXO = ["meta_aporte", "meta_retirada", "meta_compra", "investimento_aporte", "investimento_resgate"];

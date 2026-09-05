@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { nhostQuery } from "@/lib/nhost";
 import { categorizar } from "@/lib/categorizacao";
+import { parseExtratoMercadoPago } from "@/lib/extratoMercadoPago";
 import {
   INSERIR_AVULSO, INSERIR_RECORRENTE, INSERIR_CUSTO_FIXO,
   TOGGLE_RECORRENTE, TOGGLE_CUSTO_FIXO, EDITAR_RECORRENTE, EDITAR_CUSTO_FIXO, META_BY_ID,
@@ -14,6 +15,7 @@ import {
   ATUALIZAR_TAXA_INVESTIMENTO, INSERIR_TRANSACAO_INVESTIMENTO, INSERIR_INVESTIMENTO,
   CATEGORIAS_COM_PALAVRAS, INSERIR_CATEGORIA, DELETAR_CATEGORIA, ADICIONAR_PALAVRA, REMOVER_PALAVRA,
   TRANSACOES_PARA_RECATEGORIZAR, ATUALIZAR_CATEGORIA_TRANSACAO,
+  MESES_POR_DATAS, OPERACOES_JA_IMPORTADAS, INSERIR_TRANSACAO_EXTRATO,
 } from "@/lib/queries";
 import { revalidatePath } from "next/cache";
 
@@ -496,4 +498,116 @@ export async function atualizarCategoriaTransacao(formData) {
   await nhostQuery(ATUALIZAR_CATEGORIA_TRANSACAO, { id, id_categoria });
   revalidatePath("/");
   revalidatePath("/relatorios");
+}
+
+function chaveOperacao(id_operacao, valor) {
+  return `${id_operacao}|${Number(valor).toFixed(2)}`;
+}
+
+export async function analisarExtratoMercadoPago(prevState, formData) {
+  const arquivo = formData.get("arquivo");
+  const de = formData.get("de") || null;
+  const ate = formData.get("ate") || null;
+
+  if (!arquivo || typeof arquivo === "string" || arquivo.size === 0) {
+    return { linhas: null, erro: "Selecione o PDF do extrato do Mercado Pago." };
+  }
+
+  let lancamentos;
+  try {
+    const bytes = new Uint8Array(await arquivo.arrayBuffer());
+    lancamentos = await parseExtratoMercadoPago(bytes);
+  } catch (e) {
+    console.error("Erro ao ler extrato:", e);
+    return { linhas: null, erro: "Não consegui ler esse PDF. Confirme que é o extrato de conta do Mercado Pago." };
+  }
+
+  if (de) lancamentos = lancamentos.filter(l => l.data >= de);
+  if (ate) lancamentos = lancamentos.filter(l => l.data <= ate);
+
+  if (lancamentos.length === 0) {
+    return { linhas: null, erro: "Nenhum lançamento encontrado nesse arquivo (ou nenhum dentro do período escolhido)." };
+  }
+
+  const mesesNecessarios = [...new Set(lancamentos.map(l => l.data.slice(0, 7) + "-01"))];
+  const [{ meses }, { categorias }, { transacoes_mes: existentes }] = await Promise.all([
+    nhostQuery(MESES_POR_DATAS, { datas: mesesNecessarios }),
+    nhostQuery(CATEGORIAS_COM_PALAVRAS),
+    nhostQuery(OPERACOES_JA_IMPORTADAS, { ids: lancamentos.map(l => l.id_operacao) }),
+  ]);
+
+  const mesPorData = new Map(meses.map(m => [m.mes.slice(0, 10), m]));
+  const jaImportado = new Set(existentes.map(t => chaveOperacao(t.id_operacao_externa, t.valor)));
+
+  const linhas = lancamentos.map(l => {
+    const tipo = l.valor >= 0 ? "entrada" : "saida";
+    const valor = Math.round(Math.abs(l.valor) * 100) / 100;
+    const mes = mesPorData.get(l.data.slice(0, 7) + "-01");
+    const duplicado = jaImportado.has(chaveOperacao(l.id_operacao, valor));
+    const id_categoria_sugerida = categorizar(l.descricao, categorias.filter(c => c.tipo === tipo)) || "";
+    const categoriasDoTipo = categorias.filter(c => c.tipo === tipo).map(c => ({ id_categoria: c.id_categoria, nome: c.nome }));
+
+    return {
+      data: l.data,
+      descricao: l.descricao,
+      valor,
+      tipo,
+      id_operacao: l.id_operacao,
+      id_categoria_sugerida,
+      categorias: categoriasDoTipo,
+      mes_existe: !!mes,
+      mes_fechado: mes ? mes.fechado : false,
+      duplicado,
+    };
+  });
+
+  return { linhas, erro: null };
+}
+
+export async function confirmarImportacaoExtrato(formData) {
+  const total = parseInt(formData.get("total_linhas")) || 0;
+  const linhas = [];
+  for (let i = 0; i < total; i++) {
+    if (!formData.get(`linha_${i}_incluir`)) continue;
+    linhas.push({
+      data: formData.get(`linha_${i}_data`),
+      descricao: formData.get(`linha_${i}_descricao`),
+      valor: parseFloat(formData.get(`linha_${i}_valor`)),
+      tipo: formData.get(`linha_${i}_tipo`),
+      id_operacao: formData.get(`linha_${i}_id_operacao`),
+      id_categoria: formData.get(`linha_${i}_categoria`) || null,
+    });
+  }
+
+  if (linhas.length === 0) redirect("/importar");
+
+  const mesesNecessarios = [...new Set(linhas.map(l => l.data.slice(0, 7) + "-01"))];
+  const [{ meses }, { transacoes_mes: existentes }] = await Promise.all([
+    nhostQuery(MESES_POR_DATAS, { datas: mesesNecessarios }),
+    nhostQuery(OPERACOES_JA_IMPORTADAS, { ids: linhas.map(l => l.id_operacao) }),
+  ]);
+  const mesPorData = new Map(meses.map(m => [m.mes.slice(0, 10), m]));
+  const jaImportado = new Set(existentes.map(t => chaveOperacao(t.id_operacao_externa, t.valor)));
+
+  let importadas = 0;
+  for (const l of linhas) {
+    const mes = mesPorData.get(l.data.slice(0, 7) + "-01");
+    if (!mes || mes.fechado) continue;
+    if (jaImportado.has(chaveOperacao(l.id_operacao, l.valor))) continue;
+
+    await nhostQuery(INSERIR_TRANSACAO_EXTRATO, {
+      id_mes: mes.id_mes,
+      nome: l.descricao,
+      valor: l.valor,
+      tipo: l.tipo,
+      id_categoria: l.id_categoria,
+      id_operacao_externa: l.id_operacao,
+      criado_em: `${l.data}T12:00:00Z`,
+    });
+    importadas++;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/relatorios");
+  redirect(`/importar?importadas=${importadas}`);
 }

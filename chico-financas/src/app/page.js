@@ -175,8 +175,9 @@ export default async function Home({ searchParams }) {
                 meta_retirada: { texto: "meta", teal: true },
                 meta_compra: { texto: "meta", teal: true },
                 investimento_resgate: { texto: "investimento", teal: true },
+                mercado_pago: { texto: "mp", teal: false },
               }}
-              deletavelOrigens={["avulso", "recorrente"]}
+              deletavelOrigens={["avulso", "recorrente", "mercado_pago"]}
               mesFechado={mesInfo.fechado}
               vazioTexto="Nenhuma entrada neste mês."
               categorias={categorias}
@@ -206,9 +207,10 @@ export default async function Home({ searchParams }) {
                 meta_compra: { texto: "meta", teal: true },
                 investimento_aporte: { texto: "investimento", teal: true },
                 parcelamento: { texto: "parcela", teal: false },
+                mercado_pago: { texto: "mp", teal: false },
               }}
-              deletavelOrigens={["avulso", "custo_fixo"]}
-              categorizavelOrigens={["avulso", "custo_fixo", "parcelamento"]}
+              deletavelOrigens={["avulso", "custo_fixo", "mercado_pago"]}
+              categorizavelOrigens={["avulso", "custo_fixo", "parcelamento", "mercado_pago"]}
               mesFechado={mesInfo.fechado}
               vazioTexto="Nenhuma saída neste mês."
               categorias={categorias}

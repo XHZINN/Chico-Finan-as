@@ -339,3 +339,34 @@ export const ATUALIZAR_CATEGORIA_TRANSACAO = `
     update_transacoes_mes_by_pk(pk_columns: { id_transacao: $id }, _set: { id_categoria: $id_categoria }) { id_transacao }
   }
 `;
+
+export const MESES_POR_DATAS = `
+  query MesesPorDatas($datas: [date!]!) {
+    meses(where: { mes: { _in: $datas } }) {
+      id_mes
+      mes
+      fechado
+    }
+  }
+`;
+
+export const OPERACOES_JA_IMPORTADAS = `
+  query OperacoesJaImportadas($ids: [String!]!) {
+    transacoes_mes(where: { id_operacao_externa: { _in: $ids } }) {
+      id_operacao_externa
+      valor
+    }
+  }
+`;
+
+export const INSERIR_TRANSACAO_EXTRATO = `
+  mutation InserirTransacaoExtrato(
+    $id_mes: uuid!, $nome: String!, $valor: numeric!, $tipo: String!,
+    $id_categoria: uuid, $id_operacao_externa: String!, $criado_em: timestamptz!
+  ) {
+    insert_transacoes_mes_one(object: {
+      id_mes: $id_mes, nome: $nome, valor: $valor, tipo: $tipo, origem: "mercado_pago",
+      id_categoria: $id_categoria, id_operacao_externa: $id_operacao_externa, criado_em: $criado_em
+    }) { id_transacao }
+  }
+`;
