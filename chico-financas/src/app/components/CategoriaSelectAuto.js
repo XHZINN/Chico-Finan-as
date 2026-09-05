@@ -1,17 +1,29 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useState, useTransition } from "react";
 import { atualizarCategoriaTransacao } from "../actions";
 
-function Select({ id_categoria, categorias, tipo }) {
-  const { pending } = useFormStatus();
+export default function CategoriaSelectAuto({ id_transacao, id_categoria, categorias, tipo }) {
+  const [valor, setValor] = useState(id_categoria || "");
+  const [pending, startTransition] = useTransition();
+
+  function onChange(e) {
+    const novoValor = e.target.value;
+    setValor(novoValor);
+    const formData = new FormData();
+    formData.set("id", id_transacao);
+    formData.set("id_categoria", novoValor);
+    startTransition(() => {
+      atualizarCategoriaTransacao(formData);
+    });
+  }
+
   return (
     <select
-      name="id_categoria"
-      defaultValue={id_categoria || ""}
+      value={valor}
+      onChange={onChange}
       disabled={pending}
       aria-busy={pending}
-      onChange={(e) => e.currentTarget.form.requestSubmit()}
       style={{
         fontSize: 11,
         padding: "2px 4px",
@@ -29,14 +41,5 @@ function Select({ id_categoria, categorias, tipo }) {
         <option key={c.id_categoria} value={c.id_categoria}>{c.nome}</option>
       ))}
     </select>
-  );
-}
-
-export default function CategoriaSelectAuto({ id_transacao, id_categoria, categorias, tipo }) {
-  return (
-    <form action={atualizarCategoriaTransacao}>
-      <input type="hidden" name="id" value={id_transacao} />
-      <Select id_categoria={id_categoria} categorias={categorias} tipo={tipo} />
-    </form>
   );
 }

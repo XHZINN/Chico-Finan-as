@@ -209,6 +209,14 @@ details[open]>.dash-summary::before{content:"▾";}
   .edit-grid .field-wide{grid-column:1 / -1;}
 }
 
+.meta-item{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.meta-item:last-of-type{border-bottom:none;}
+.meta-item-row{display:flex;align-items:center;gap:10px;}
+.meta-item-row .name{flex:1;}
+.meta-item-row .value{font-family:'IBM Plex Mono',monospace;min-width:90px;text-align:right;}
+.meta-item-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.meta-item-actions .btn-link{margin:0;}
+
 .add-form{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 .add-form input{
   font-family:'IBM Plex Sans',sans-serif;

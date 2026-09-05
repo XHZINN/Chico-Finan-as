@@ -50,9 +50,9 @@ export default async function MetaDetalhe({ params, searchParams }) {
       <section>
         <h2>Itens</h2>
         {meta_itens.map((item) => (
-          <div className="item-row" key={item.id_item}>
+          <div className="meta-item" key={item.id_item}>
             {sp.editar === item.id_item ? (
-              <form action={editarItemMeta} className="add-form" style={{flex: 1}}>
+              <form action={editarItemMeta} className="add-form">
                 <input type="hidden" name="id" value={item.id_item} />
                 <input type="hidden" name="id_meta" value={meta.id_meta} />
                 <input className="name" name="nome" defaultValue={item.nome} required />
@@ -62,52 +62,56 @@ export default async function MetaDetalhe({ params, searchParams }) {
               </form>
             ) : (
               <>
-                <span className="name" style={{textDecoration: item.comprado ? "line-through" : "none"}}>{item.nome}</span>
-                <span className="value">{fmt(item.valor_planejado)}</span>
+                <div className="meta-item-row">
+                  <span className="name" style={{textDecoration: item.comprado ? "line-through" : "none"}}>{item.nome}</span>
+                  <span className="value">{fmt(item.valor_planejado)}</span>
+                </div>
 
-                {!item.comprado && !item.id_parcelamento && (
-                  <a href={`/metas/${meta.id_meta}?editar=${item.id_item}`} className="btn-link">editar</a>
-                )}
+                <div className="meta-item-actions">
+                  {!item.comprado && !item.id_parcelamento && (
+                    <a href={`/metas/${meta.id_meta}?editar=${item.id_item}`} className="btn-link">editar</a>
+                  )}
 
-                {!item.id_parcelamento && (
-                  <form action={toggleItemComprado}>
-                    <input type="hidden" name="id_item" value={item.id_item} />
-                    <input type="hidden" name="id_meta" value={meta.id_meta} />
-                    <input type="hidden" name="nome_item" value={item.nome} />
-                    <input type="hidden" name="valor" value={item.valor_planejado} />
-                    <input type="hidden" name="comprado" value={item.comprado} />
-                    <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
-                    <input type="hidden" name="mes" value={mesYYYYMM} />
-                    <SubmitButton>{item.comprado ? "desmarcar" : "comprado"}</SubmitButton>
-                  </form>
-                )}
+                  {!item.id_parcelamento && (
+                    <form action={toggleItemComprado}>
+                      <input type="hidden" name="id_item" value={item.id_item} />
+                      <input type="hidden" name="id_meta" value={meta.id_meta} />
+                      <input type="hidden" name="nome_item" value={item.nome} />
+                      <input type="hidden" name="valor" value={item.valor_planejado} />
+                      <input type="hidden" name="comprado" value={item.comprado} />
+                      <input type="hidden" name="id_mes" value={mesInfo?.id_mes} />
+                      <input type="hidden" name="mes" value={mesYYYYMM} />
+                      <SubmitButton className="btn-link">{item.comprado ? "desmarcar" : "comprado"}</SubmitButton>
+                    </form>
+                  )}
 
-                {!item.comprado && !item.id_parcelamento && (
-                  <form action={comprarItemParcelado} className="add-form" style={{marginTop: 6}}>
-                    <input type="hidden" name="id_item" value={item.id_item} />
-                    <input type="hidden" name="id_meta" value={meta.id_meta} />
-                    <input type="hidden" name="nome_item" value={item.nome} />
-                    <input type="hidden" name="valor_total" value={item.valor_planejado} />
-                    <input type="hidden" name="mes" value={mesYYYYMM} />
-                    <input name="qtd_parcelas" type="number" placeholder="parcelas" style={{width: 70}} required />
-                    <SubmitButton>parcelar</SubmitButton>
-                  </form>
-                )}
+                  {!item.comprado && !item.id_parcelamento && (
+                    <form action={comprarItemParcelado} className="add-form" style={{margin: 0}}>
+                      <input type="hidden" name="id_item" value={item.id_item} />
+                      <input type="hidden" name="id_meta" value={meta.id_meta} />
+                      <input type="hidden" name="nome_item" value={item.nome} />
+                      <input type="hidden" name="valor_total" value={item.valor_planejado} />
+                      <input type="hidden" name="mes" value={mesYYYYMM} />
+                      <input name="qtd_parcelas" type="number" placeholder="parcelas" style={{width: 70}} required />
+                      <SubmitButton>parcelar</SubmitButton>
+                    </form>
+                  )}
 
-                {item.id_parcelamento && (
-                  <div style={{display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-end"}}>
-                    <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>
-                      {item.parcelamento?.ativo
-                        ? `parcelado ${item.parcelamento.parcelas_pagas}/${item.parcelamento.qtd_parcelas}`
-                        : "quitado"}
-                    </span>
-                    {item.parcelamento?.ativo && (
-                      <span style={{fontSize: 12, color: "var(--ink-soft)"}}>
-                        {fmt(item.parcelamento.valor_parcela)}/mês · próxima: {item.parcelamento.proximo_mes?.slice(0, 7)}
+                  {item.id_parcelamento && (
+                    <>
+                      <span className="stamp ok" style={{background: "var(--teal-bg)", color: "var(--teal)", borderColor: "var(--teal)"}}>
+                        {item.parcelamento?.ativo
+                          ? `parcelado ${item.parcelamento.parcelas_pagas}/${item.parcelamento.qtd_parcelas}`
+                          : "quitado"}
                       </span>
-                    )}
-                  </div>
-                )}
+                      {item.parcelamento?.ativo && (
+                        <span style={{fontSize: 12, color: "var(--ink-soft)"}}>
+                          {fmt(item.parcelamento.valor_parcela)}/mês · próxima: {item.parcelamento.proximo_mes?.slice(0, 7)}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
               </>
             )}
           </div>

@@ -105,7 +105,7 @@ export const MES_INFO = `
 
 export const TRANSACOES_DO_MES = `
   query TransacoesDoMes($id_mes: uuid!) {
-    transacoes_mes(where: { id_mes: { _eq: $id_mes } }) {
+    transacoes_mes(where: { id_mes: { _eq: $id_mes } }, order_by: [{ criado_em: asc }, { id_transacao: asc }]) {
       id_transacao nome valor tipo origem id_categoria criado_em
       categoria { nome }
     }
