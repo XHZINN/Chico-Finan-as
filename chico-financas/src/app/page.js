@@ -2,6 +2,7 @@ import Toast from "./Toast";
 import ListaTransacoes from "./components/ListaTransacoes";
 import SubmitButton from "./components/SubmitButton";
 import ParcelamentoItem from "./components/ParcelamentoItem";
+import ImportModal from "./components/ImportModal";
 import { nhostQuery } from "@/lib/nhost";
 import {
   MES_INFO, TRANSACOES_DO_MES, ATIVOS, EXTRATO_RANGE, SALDO_ANTES_DE, CATEGORIAS_COM_PALAVRAS,
@@ -38,6 +39,7 @@ export default async function Home({ searchParams }) {
   const erro =
   sp.erro === "valor_invalido" ? "Informe um valor válido, maior que zero." :
   null;
+  const importadas = sp.importadas;
   const mesData = primeiroDia(mesYYYYMM);
 
   // dados do mês navegado
@@ -137,6 +139,13 @@ export default async function Home({ searchParams }) {
       <p className="sub">Entradas e saídas do mês, mês a mês.</p>
       {erro && (
         <Toast mensagem={erro} />
+      )}
+
+      <ImportModal />
+      {importadas !== undefined && (
+        <div className="receipt-highlight teal" style={{ marginBottom: 20 }}>
+          <span className="value">{importadas} lançamento{importadas === "1" ? "" : "s"} importado{importadas === "1" ? "" : "s"} com sucesso.</span>
+        </div>
       )}
 
       <div className="receipt">

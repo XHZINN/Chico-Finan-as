@@ -609,5 +609,5 @@ export async function confirmarImportacaoExtrato(formData) {
 
   revalidatePath("/");
   revalidatePath("/relatorios");
-  redirect(`/importar?importadas=${importadas}`);
+  redirect(`/?importadas=${importadas}`);
 }

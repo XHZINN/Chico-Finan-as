@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { analisarExtratoMercadoPago, confirmarImportacaoExtrato } from "../actions";
-import SubmitButton from "../components/SubmitButton";
+import SubmitButton from "./SubmitButton";
 
 function fmt(n) {
   return "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2 });

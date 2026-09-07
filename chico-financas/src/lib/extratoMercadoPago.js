@@ -23,6 +23,32 @@ function paraNumero(valorTexto) {
   return Number(valorTexto.replace(/\./g, "").replace(",", "."));
 }
 
+const REGEX_REEMBOLSO = /^reembolso\b/i;
+
+// um "Reembolso de pagamento X" não é renda de verdade — é a devolução de um
+// gasto que já entrou como saída (às vezes com descrição levemente diferente,
+// ex. espaçamento). Casar pelo valor exato do pagamento anterior ainda não
+// pareado (a ordem do PDF é cronológica, então o reembolso sempre vem depois)
+// e remover os dois lançamentos evita inflar entradas/saídas e categorizar
+// errado um gasto que foi estornado.
+function removerReembolsosPareados(lancamentos) {
+  const excluidos = new Set();
+
+  lancamentos.forEach((l, i) => {
+    if (excluidos.has(i) || !REGEX_REEMBOLSO.test(l.descricao)) return;
+    excluidos.add(i);
+    for (let j = i - 1; j >= 0; j--) {
+      if (excluidos.has(j)) continue;
+      if (lancamentos[j].valor === -l.valor) {
+        excluidos.add(j);
+        break;
+      }
+    }
+  });
+
+  return lancamentos.filter((_, i) => !excluidos.has(i));
+}
+
 /**
  * Lê um PDF de extrato de conta do Mercado Pago e devolve os lançamentos
  * encontrados. Cada linha da tabela é ancorada pela célula de data (única
@@ -108,5 +134,5 @@ export async function parseExtratoMercadoPago(bytes) {
     });
   }
 
-  return lancamentos;
+  return removerReembolsosPareados(lancamentos);
 }
